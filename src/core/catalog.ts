@@ -80,7 +80,8 @@ export interface ItemDef {
   againstWall?: boolean;
   /** Wall items: default height of the item's center. */
   mountHeight?: number;
-  /** Ceiling items: default drop from ceiling (top of item at ceiling). */
+  /** Wall items allowed in front of windows (curtains); they snap to openings. */
+  coversOpenings?: boolean;
   price?: number;
   tags?: string[];
 }
@@ -672,6 +673,28 @@ const defs: ItemDef[] = [
     slots: [{ id: 'wood', label: 'Madera', categories: ['wood', 'lacquer'], default: 'walnut' }],
     surfaces: ([w, h, d]) => [{ x: 0, z: 0, w: w - 0.02, d: d - 0.02, y: h / 2, clearance: 0.6 }],
     price: 120,
+  },
+  {
+    type: 'curtains',
+    name: 'Cortinas de lino',
+    category: 'wall',
+    placement: 'wall',
+    coversOpenings: true,
+    mountHeight: 1.33,
+    variants: [
+      { label: 'Ventana 190', size: [1.9, 2.62, 0.13] },
+      { label: 'Ventanal 300', size: [3.0, 2.62, 0.13] },
+    ],
+    slots: [
+      { id: 'fabric', label: 'Tejido', categories: ['fabric'], default: 'linen-oat' },
+      { id: 'rod', label: 'Barra', categories: ['metal', 'wood'], default: 'brass' },
+    ],
+    // only the gathered side panels occupy space; the window stays clear
+    colliders: ([w, h, d]) => [
+      { x: -w / 2 + 0.2, z: d / 2, w: 0.4, d, y0: -h / 2, y1: h / 2 },
+      { x: w / 2 - 0.2, z: d / 2, w: 0.4, d, y0: -h / 2, y1: h / 2 },
+    ],
+    price: 230,
   },
   {
     type: 'tv',

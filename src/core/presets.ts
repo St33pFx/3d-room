@@ -61,6 +61,7 @@ function baseLayout(): ItemInstance[] {
     item('sb-vase', 'vase', [-0.55, 0.72, 0], 0, { parentId: 'sideboard', variant: 1 }),
     item('sb-books', 'books', [0.05, 0.72, 0.02], -0.1, { parentId: 'sideboard' }),
     item('sb-candles', 'candles', [0.5, 0.72, 0], 0, { parentId: 'sideboard' }),
+    onWall('curtains-dining', 'curtains', 'north', 5.75, 1.33, { variant: 0 }),
     onWall('art-dining', 'art-frame', 'east', 1.95, 1.75, { variant: 1, materials: { art: 'art-blocks', frame: 'ash-black' } }),
     item('snake', 'plant-snake', [3.3, 0, 0.55], 0),
   ];

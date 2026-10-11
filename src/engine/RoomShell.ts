@@ -322,7 +322,7 @@ export class RoomShell {
       tree(Math.cos(a) * r, Math.sin(a) * r, 1.4 + rnd() * 1.1);
     }
     // clipped hedge behind the windows
-    for (let i = 0; i < 18; i++) blob(0.6 + rnd() * 0.2, -9 + i * 1.05, 0.25, -8.2 + (rnd() - 0.5) * 0.2, 0.9);
+    for (let i = 0; i < 26; i++) blob(0.5 + rnd() * 0.18, -13 + i * 1.0, 0.15, -12.5 + (rnd() - 0.5) * 0.3, 0.85);
     const leaves = new THREE.Mesh(mergeAll(leafGeos), foliage);
     leaves.castShadow = true;
     leaves.receiveShadow = true;

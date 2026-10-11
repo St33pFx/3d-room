@@ -28,7 +28,11 @@ export function ContextToolbar() {
       const a = getEngine()?.anchorFor(sel);
       if (!el || !a) return;
       el.style.opacity = a.visible ? '1' : '0';
-      el.style.transform = `translate(${Math.round(a.x)}px, ${Math.round(a.y)}px) translate(-50%, calc(-100% - 18px))`;
+      // keep clear of the top bar and the screen edges
+      const half = el.offsetWidth / 2 + 12;
+      const x = Math.min(window.innerWidth - half, Math.max(half, a.x));
+      const y = Math.max(el.offsetHeight + 96, a.y);
+      el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) translate(-50%, calc(-100% - 18px))`;
     };
     tick();
     return () => cancelAnimationFrame(raf);

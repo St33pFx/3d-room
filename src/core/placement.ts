@@ -364,7 +364,7 @@ export interface WallTarget {
 
 function wallValid(doc: DesignDoc, item: ItemInstance, wall: WallSpec, u: number, y: number, obs: Box[]): boolean {
   const [w, h] = itemSize(item.type, item.variant);
-  if (wallRectsBlocked(wall, u, y, w, h)) return false;
+  if (!getDef(item.type).coversOpenings && wallRectsBlocked(wall, u, y, w, h)) return false;
   const pose = wallPose(wall.id, u, y);
   return !collides(boxesAt(item, pose), obs) && !!doc;
 }
@@ -372,7 +372,8 @@ function wallValid(doc: DesignDoc, item: ItemInstance, wall: WallSpec, u: number
 function clampWall(item: ItemInstance, wall: WallSpec, u: number, y: number): [number, number] {
   const [w, h] = itemSize(item.type, item.variant);
   const m = 0.03;
-  return [clamp(u, w / 2 + m, wall.length - w / 2 - m), clamp(y, h / 2 + 0.12, ROOM.height - h / 2 - 0.04)];
+  const floorGap = getDef(item.type).coversOpenings ? 0.015 : 0.12;
+  return [clamp(u, w / 2 + m, wall.length - w / 2 - m), clamp(y, h / 2 + floorGap, ROOM.height - h / 2 - 0.04)];
 }
 
 export function placeOnWall(doc: DesignDoc, item: ItemInstance, t: WallTarget, mode: SnapMode): PlacementResult {
@@ -405,6 +406,12 @@ export function placeOnWall(doc: DesignDoc, item: ItemInstance, t: WallTarget, m
         if (Math.abs(d) < 0.08 && (!bestU || Math.abs(d) < Math.abs(bestU.d))) bestU = { d, v: proj.u };
         const dy = pose.y - y;
         if (Math.abs(dy) < 0.08 && (!bestY || Math.abs(dy) < Math.abs(bestY.d))) bestY = { d: dy, v: pose.y };
+      }
+    }
+    if (def.coversOpenings) {
+      for (const o of wall.openings) {
+        const d = o.u - u;
+        if (Math.abs(d) < 0.3 && (!bestU || Math.abs(d) < Math.abs(bestU.d))) bestU = { d, v: o.u };
       }
     }
     const off = 0.01;
@@ -463,6 +470,18 @@ export function placeOnWall(doc: DesignDoc, item: ItemInstance, t: WallTarget, m
 export function findWallSpot(doc: DesignDoc, item: ItemInstance, wallIds: WallId[], u?: number): ItemInstance | null {
   const def = getDef(item.type);
   const obs = obstacles(doc, item);
+  if (def.coversOpenings && u === undefined) {
+    for (const wid of wallIds) {
+      for (const o of WALLS[wid].openings) {
+        if (o.kind === 'door') continue;
+        const [cu, cy] = clampWall(item, WALLS[wid], o.u, def.mountHeight ?? 1.4);
+        if (wallValid(doc, item, WALLS[wid], cu, cy, obs)) {
+          const p = wallPose(wid, cu, cy);
+          return { ...item, wall: wid, parentId: undefined, position: [p.x, p.y, p.z], rotation: p.rot };
+        }
+      }
+    }
+  }
   for (const wid of wallIds) {
     const wall = WALLS[wid];
     const start = u ?? wall.length / 2;

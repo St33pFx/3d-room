@@ -783,6 +783,38 @@ const wallShelf: Builder = (c) => {
   c.add(rbox(w, h, d, 0.004), c.mat('wood'), 0, 0, d / 2, { grain: 0 });
 };
 
+const curtains: Builder = (c) => {
+  const [w, h, d] = c.size;
+  const fabric = c.mat('fabric');
+  const rod = c.mat('rod');
+  const rodY = h / 2 - 0.05;
+  // rod with finials, on two brackets
+  c.add(cyl(0.012, 0.012, w + 0.12, 16), rod, 0, rodY, d - 0.05, { rz: PI / 2 });
+  for (const s of [-1, 1]) {
+    c.add(sphere(0.022, 16, 10), rod, s * (w / 2 + 0.07), rodY, d - 0.05);
+    c.add(cyl(0.008, 0.008, d - 0.03, 8), rod, s * (w / 2 - 0.08), rodY, (d - 0.05) / 2 + 0.01, { rx: PI / 2 });
+  }
+  // two gathered panels with soft pleats, slightly flared at the hem
+  const panelW = 0.42;
+  const dropH = h - 0.1;
+  for (const s of [-1, 1]) {
+    const g = new THREE.PlaneGeometry(panelW, dropH, 56, 16);
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const t = 1 - (y + dropH / 2) / dropH; // 0 top .. 1 hem
+      const pleat = Math.sin((x / panelW) * PI * 9) * (0.028 + 0.012 * t);
+      const flare = 1 + 0.18 * t * t;
+      pos.setXYZ(i, x * flare, y, pleat + 0.01 * Math.sin(t * 3 + x * 8));
+    }
+    g.computeVertexNormals();
+    c.add(g, fabric, s * (w / 2 - panelW / 2 + 0.02), rodY - 0.02 - dropH / 2, d - 0.06);
+    // rings
+    for (let k = 0; k < 7; k++) c.add(new THREE.TorusGeometry(0.02, 0.003, 6, 16), rod, s * (w / 2 - panelW + 0.03 + k * 0.065), rodY, d - 0.05);
+  }
+};
+
 const tv: Builder = (c) => {
   const [w, h, d] = c.size;
   c.add(rbox(w, h, 0.03, 0.004), c.fixed('fx-black'), 0, 0, d - 0.015);
@@ -830,6 +862,7 @@ const BUILDERS: Record<string, Builder> = {
   'art-frame': artFrame,
   'mirror-round': mirrorRound,
   'wall-shelf': wallShelf,
+  curtains,
   tv,
 };
 
