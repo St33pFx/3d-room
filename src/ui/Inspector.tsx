@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import { Copy, Crosshair, Lock, LockOpen, PanelRightClose, RotateCcw, RotateCw, Trash2, Lightbulb, Ruler, Sofa, Layers } from 'lucide-react';
 import { getDef, itemSize, type MaterialSlot } from '../core/catalog';
 import { CATEGORY_LABELS, FINISH_CATEGORIES, getMaterial, materialsIn, type MaterialCategory } from '../core/materials';
-import { findItem, rotateItem, worldPose } from '../core/placement';
+import { findItem, rotateItem, wallCoords, worldPose } from '../core/placement';
 import { ROOM, WALL_IDS, WALLS } from '../core/room';
 import type { ItemInstance, RoomFinishes, WallId } from '../core/types';
 import { getEngine } from '../engine/Engine';
 import { useStore } from '../state/store';
 import { Swatch } from './Swatch';
-import { formatPrice } from './commands';
+import { formatPrice, setItemTransform } from './commands';
 
 // Context-sensitive inspector: the selected piece, a wall/floor/ceiling, or an
 // overview of the whole room with its finishes and budget.
@@ -28,6 +28,45 @@ function MaterialGrid({ categories, value, onPick }: { categories: MaterialCateg
         </div>
       ))}
     </div>
+  );
+}
+
+function NumField({ label, unit, value, onCommit, disabled, digits = 2 }: { label: string; unit: string; value: number; onCommit?: (v: number) => boolean; disabled?: boolean; digits?: number }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
+  const shown = draft ?? value.toFixed(digits);
+  const commit = () => {
+    if (draft === null) return;
+    const v = Number(draft.replace(',', '.'));
+    setDraft(null);
+    if (!Number.isFinite(v) || !onCommit || Math.abs(v - value) < 1e-4) return;
+    if (!onCommit(v)) {
+      setShake(true);
+      setTimeout(() => setShake(false), 450);
+      useStore.getState().toast('No cabe en esa posición');
+    }
+  };
+  return (
+    <label className={`num-field${disabled ? ' is-disabled' : ''}${shake ? ' is-shake' : ''}`}>
+      <span>{label}</span>
+      <div>
+        <input
+          inputMode="decimal"
+          value={shown}
+          disabled={disabled}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            if (e.key === 'Escape') {
+              setDraft(null);
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+        />
+        <em>{unit}</em>
+      </div>
+    </label>
   );
 }
 
@@ -151,25 +190,22 @@ function ItemPanel({ item }: { item: ItemInstance }) {
           </Section>
         )}
         <Section title="Posición" value={`${deg}°`} defaultOpen={false}>
-          <dl className="readout">
-            <div>
-              <dt>X</dt>
-              <dd>{pose.x.toFixed(2)} m</dd>
-            </div>
-            <div>
-              <dt>Z</dt>
-              <dd>{pose.z.toFixed(2)} m</dd>
-            </div>
-            <div>
-              <dt>Altura</dt>
-              <dd>{(def.placement === 'wall' ? pose.y : pose.y).toFixed(2)} m</dd>
-            </div>
-            <div>
-              <dt>Giro</dt>
-              <dd>{deg}°</dd>
-            </div>
-          </dl>
-          <p className="hint">Flechas para mover 5 cm · Mayús para 1 cm · Arrastra con Mayús para desactivar el ajuste.</p>
+          <div className="readout">
+            {def.placement === 'wall' ? (
+              <>
+                <NumField label="A lo largo" unit="m" value={wallCoords(item)?.u ?? 0} onCommit={(v) => setItemTransform(item.id, { u: v })} disabled={item.locked} />
+                <NumField label="Altura" unit="m" value={pose.y} onCommit={(v) => setItemTransform(item.id, { y: v })} disabled={item.locked} />
+              </>
+            ) : (
+              <>
+                <NumField label="X" unit="m" value={pose.x} onCommit={(v) => setItemTransform(item.id, { x: v })} disabled={!!item.parentId || item.locked} />
+                <NumField label="Z" unit="m" value={pose.z} onCommit={(v) => setItemTransform(item.id, { z: v })} disabled={!!item.parentId || item.locked} />
+                <NumField label="Giro" unit="°" value={deg} digits={0} onCommit={(v) => setItemTransform(item.id, { deg: v - deg + (item.rotation * 180) / Math.PI })} disabled={item.locked} />
+                <NumField label="Altura" unit="m" value={pose.y} disabled />
+              </>
+            )}
+          </div>
+          <p className="hint">Escribe un valor y pulsa Intro. Flechas: mover 5 cm (Mayús 1 cm) · Mayús al arrastrar: sin ajuste.</p>
         </Section>
         {children.length > 0 && (
           <Section title="Encima" value={`${children.length}`}>

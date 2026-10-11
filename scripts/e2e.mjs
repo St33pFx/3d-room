@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 const base = process.env.URL || 'http://localhost:5173/';
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
@@ -164,6 +164,26 @@ await page.click('.light-pop .chip:has-text("Atardecer")');
 check('time preset applies', Math.abs((await S(() => window.__store.getState().env.time)) - 19.6) < 0.01);
 await page.click('button[title="Más ajustes de luz"]');
 await shot('sunset');
+
+// precise position from the inspector
+await S(() => window.__store.getState().select({ kind: 'item', id: window.__store.getState().doc.items.find((i) => i.type === 'ottoman').id }));
+await page.click('.insp-section-head:has-text("Posición")');
+const xInput = page.locator('.num-field:has-text("X") input');
+await xInput.fill('1.2');
+await xInput.press('Enter');
+const ott = await S(() => window.__store.getState().doc.items.find((i) => i.type === 'ottoman'));
+check('typing X moves the piece', Math.abs(ott.position[0] - 1.2) < 0.05, ott.position[0].toFixed(3));
+await xInput.fill('-50');
+await xInput.press('Enter');
+const ott2 = await S(() => window.__store.getState().doc.items.find((i) => i.type === 'ottoman'));
+check('out-of-room values are clamped inside', ott2.position[0] > -3.6, ott2.position[0].toFixed(3));
+check('no intersections after typed move', (await S(() => window.__engine.validate())).length === 0);
+
+// clean PNG capture
+const [download] = await Promise.all([page.waitForEvent('download', { timeout: 120000 }), page.keyboard.press('p')]);
+const file = await download.path();
+const { statSync } = await import('node:fs');
+check('P downloads a PNG capture', download.suggestedFilename().endsWith('.png') && statSync(file).size > 50000, `${download.suggestedFilename()} ${(statSync(file).size / 1024).toFixed(0)} KB`);
 
 // save, reload, restore
 await page.keyboard.press('Control+s');

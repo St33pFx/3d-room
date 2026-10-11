@@ -25,6 +25,7 @@ export class Overlays {
   private footprint: LineSegments2;
   private hoverPrint: LineSegments2;
   private guides: LineSegments2;
+  private measures: LineSegments2;
   private ring: THREE.Mesh;
   private ringTicks: THREE.LineSegments;
   readonly handle: THREE.Mesh;
@@ -39,11 +40,13 @@ export class Overlays {
     this.fpMat = lineMat(ACCENT, 2.2);
     const hoverMat = lineMat(new THREE.Color('#ffffff'), 1.4, false, 0.75);
     const guideMat = lineMat(GUIDE, 1.6, true);
-    this.mats.push(this.fpMat, hoverMat, guideMat);
+    const measureMat = lineMat(new THREE.Color('#2a2622'), 1.2, true, 0.75);
+    this.mats.push(this.fpMat, hoverMat, guideMat, measureMat);
+    this.measures = new LineSegments2(new LineSegmentsGeometry(), measureMat);
     this.footprint = new LineSegments2(new LineSegmentsGeometry(), this.fpMat);
     this.hoverPrint = new LineSegments2(new LineSegmentsGeometry(), hoverMat);
     this.guides = new LineSegments2(new LineSegmentsGeometry(), guideMat);
-    for (const l of [this.footprint, this.hoverPrint, this.guides]) {
+    for (const l of [this.footprint, this.hoverPrint, this.guides, this.measures]) {
       l.renderOrder = 10;
       l.frustumCulled = false;
       l.visible = false;
@@ -179,7 +182,19 @@ export class Overlays {
     this.guides.visible = true;
   }
 
+  /** Dimension lines (world segments); labels are drawn by the caller. */
+  showMeasures(segs: [number, number, number, number, number, number][]) {
+    if (!segs.length) {
+      this.measures.visible = false;
+      return;
+    }
+    (this.measures.geometry as LineSegmentsGeometry).setPositions(segs.flat());
+    this.measures.computeLineDistances();
+    this.measures.visible = true;
+  }
+
   hideAll() {
+    this.measures.visible = false;
     this.footprint.visible = false;
     this.hoverPrint.visible = false;
     this.guides.visible = false;

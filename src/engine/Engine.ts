@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { getDef } from '../core/catalog';
-import { findItem, worldPose, boxesAt, obstacles } from '../core/placement';
+import { findItem, footprintAABB, worldPose, boxesAt, obstacles } from '../core/placement';
+import { HALF_D, HALF_W } from '../core/room';
 import { createPreset } from '../core/presets';
 import { overlapMTV } from '../core/geometry';
 import type { CameraBookmark, CameraMode, DesignDoc, EnvironmentState } from '../core/types';
@@ -281,10 +282,62 @@ export class Engine {
     this.overlays.showHover(hov ?? null, hov ? worldPose(st.doc, hov) : null);
     this.overlays.showGuides(this.interaction.guides);
 
+    this.updateMeasures(st, sel);
+
     // rim highlight on the selected / hovered piece
     this.highlight.setSelected(sel ? this.items.meshesFor(sel.id) : [], st.invalid);
     this.highlight.setHovered(hov && !st.gesture ? this.items.meshesFor(hov.id) : []);
     this.highlight.setVisible(this.overlaysVisible);
+  }
+
+  private measureEls: HTMLDivElement[] = [];
+
+  /** Live clearances to the nearest walls while a floor piece is being dragged. */
+  private updateMeasures(st: AppState, sel: ReturnType<typeof findItem>) {
+    const segs: [number, number, number, number, number, number][] = [];
+    const labels: { p: THREE.Vector3; text: string }[] = [];
+    if (sel && st.gesture && this.overlaysVisible && !sel.parentId) {
+      const placement = getDef(sel.type).placement;
+      if (placement === 'floor' || placement === 'rug') {
+        const pose = worldPose(st.doc, sel);
+        const [a, b, c, d] = footprintAABB(sel, pose.x, pose.z, pose.rot);
+        const y = 0.03;
+        const left = a + HALF_W;
+        const right = HALF_W - b;
+        const back = c + HALF_D;
+        const front = HALF_D - d;
+        const zMid = (c + d) / 2;
+        const xMid = (a + b) / 2;
+        if (left <= right) segs.push([-HALF_W, y, zMid, a, y, zMid]);
+        else segs.push([b, y, zMid, HALF_W, y, zMid]);
+        if (back <= front) segs.push([xMid, y, -HALF_D, xMid, y, c]);
+        else segs.push([xMid, y, d, xMid, y, HALF_D]);
+        for (const sg of segs) {
+          const len = Math.hypot(sg[3] - sg[0], sg[5] - sg[2]);
+          if (len < 0.005) continue;
+          labels.push({ p: new THREE.Vector3((sg[0] + sg[3]) / 2, y, (sg[2] + sg[5]) / 2), text: `${Math.round(len * 100)} cm` });
+        }
+      }
+    }
+    this.overlays.showMeasures(segs.filter((sg) => Math.hypot(sg[3] - sg[0], sg[5] - sg[2]) > 0.005));
+    while (this.measureEls.length < labels.length) {
+      const el = document.createElement('div');
+      el.className = 'measure-label';
+      this.container.appendChild(el);
+      this.measureEls.push(el);
+    }
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.measureEls.forEach((el, i) => {
+      const l = labels[i];
+      if (!l) {
+        el.style.display = 'none';
+        return;
+      }
+      const p = l.p.clone().project(this.camera);
+      el.style.display = p.z < 1 ? 'block' : 'none';
+      el.textContent = l.text;
+      el.style.transform = `translate(${((p.x + 1) / 2) * rect.width}px, ${((1 - p.y) / 2) * rect.height}px) translate(-50%, -50%)`;
+    });
   }
 
   private adaptResolution(ms: number, dt: number) {

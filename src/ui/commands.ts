@@ -1,5 +1,5 @@
 import { getDef } from '../core/catalog';
-import { findItem, placeOnFloor, placeOnSurface, placeOnWall, surfaceAt, wallCoords, worldPose } from '../core/placement';
+import { findItem, placeOnFloor, placeOnSurface, placeOnWall, rotateItem, surfaceAt, wallCoords, worldPose } from '../core/placement';
 import { exportJSON, importJSON } from '../core/persistence';
 import { getEngine } from '../engine/Engine';
 import { useStore } from '../state/store';
@@ -48,6 +48,35 @@ export function nudgeSelection(dx: number, dz: number) {
   }
   if (!next) return;
   st.commit({ ...doc, items: doc.items.map((i) => (i.id === it.id ? next! : i)) }, `Mover ${def.name}`);
+}
+
+/** Precise edits from the inspector. Returns false if the piece can't go there. */
+export function setItemTransform(id: string, t: { x?: number; z?: number; y?: number; u?: number; deg?: number }): boolean {
+  const st = useStore.getState();
+  const doc = st.doc;
+  const it = findItem(doc, id);
+  if (!it || it.locked) return false;
+  const def = getDef(it.type);
+  let next = it;
+  if (t.deg !== undefined) {
+    const r = rotateItem(doc, it, (t.deg * Math.PI) / 180);
+    if (!r) return false;
+    next = r;
+  } else if (def.placement === 'wall') {
+    const wc = wallCoords(it);
+    if (!wc || !it.wall) return false;
+    const res = placeOnWall(doc, it, { wall: it.wall, u: t.u ?? wc.u, y: t.y ?? wc.y, prev: { wall: it.wall, u: wc.u, y: wc.y } }, 'off');
+    if (!res.valid) return false;
+    next = res.item;
+  } else if (!it.parentId) {
+    const x = t.x ?? it.position[0];
+    const z = t.z ?? it.position[2];
+    const res = placeOnFloor(doc, it, { x, z, rot: it.rotation }, 'off');
+    if (!res.valid) return false;
+    next = res.item;
+  } else return false;
+  st.commit({ ...doc, items: doc.items.map((i) => (i.id === id ? next : i)) }, `Ajustar ${def.name}`);
+  return true;
 }
 
 export async function downloadScreenshot() {
