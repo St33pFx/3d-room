@@ -21,13 +21,21 @@ ver cómo cambia la luz a lo largo del día, recorrer el espacio y guardar cada 
 | **Capturas limpias** | `H` oculta toda la interfaz; `P` exporta un PNG a doble resolución sin overlays. |
 | **Escritorio y móvil** | Interfaz adaptable: en móvil la barra se compacta, el dock pasa a dos filas y los paneles son hojas inferiores. |
 
+## Desarrollo guiado por specs
+
+El comportamiento está especificado en [`specs/`](specs/README.md) (requisitos con ID anclados al
+código y a los tests) bajo la [constitución](constitution.md). `npm run verify` comprueba tipos,
+tests, trazabilidad de specs y build. Guía para agentes: [`CLAUDE.md`](CLAUDE.md).
+
 ## Ejecutar
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # build de producción en dist/
-npm test           # pruebas unitarias (placement, historial, persistencia)
+npm test           # pruebas unitarias (placement, historial, persistencia, catálogo…)
+npm run spec:check # trazabilidad specs ↔ código/tests
+npm run verify     # typecheck + test + spec:check + build
 npm run test:e2e   # pruebas de interacción en Chromium (requiere `npm run dev` en otra terminal)
 ```
 

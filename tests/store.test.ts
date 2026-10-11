@@ -11,7 +11,7 @@ beforeEach(() => {
 });
 
 describe('history', () => {
-  it('undoes and redoes discrete edits', () => {
+  it('[HIST-001] undoes and redoes discrete edits', () => {
     const before = st().doc;
     st().setFinish('floor', 'floor-terrazzo');
     expect(st().doc.finishes.floor).toBe('floor-terrazzo');
@@ -21,7 +21,7 @@ describe('history', () => {
     expect(st().doc.finishes.floor).toBe('floor-terrazzo');
   });
 
-  it('records a drag gesture as a single step', () => {
+  it('[HIST-002] records a drag gesture as a single step', () => {
     const before = st().doc;
     st().beginGesture('Mover');
     for (let i = 0; i < 10; i++) {
@@ -34,7 +34,7 @@ describe('history', () => {
     expect(st().doc).toBe(before);
   });
 
-  it('cancelling a gesture restores the document', () => {
+  it('[HIST-002] cancelling a gesture restores the document', () => {
     const before = st().doc;
     st().beginGesture('Mover');
     st().preview({ ...before, items: [] });
@@ -45,7 +45,7 @@ describe('history', () => {
 });
 
 describe('item commands', () => {
-  it('removes an item together with what rests on it, and undo brings both back', () => {
+  it('[EDIT-007][DOC-003] removes an item together with what rests on it, and undo brings both back', () => {
     const n = st().doc.items.length;
     st().removeItem('coffee');
     const ids = st().doc.items.map((i) => i.id);
@@ -56,7 +56,7 @@ describe('item commands', () => {
     expect(st().doc.items.length).toBe(n);
   });
 
-  it('duplicates into free space including children', () => {
+  it('[EDIT-007][PLC-015] duplicates into free space including children', () => {
     const n = st().doc.items.length;
     st().duplicateItem('side');
     const doc = st().doc;
@@ -68,24 +68,26 @@ describe('item commands', () => {
     expect(doc.items.some((i) => i.parentId === copy.id)).toBe(true);
   });
 
-  it('adds new items without collisions', () => {
+  it('[PLC-015][DOC-004] adds new items without collisions', () => {
     for (const type of ['ottoman', 'art-frame', 'books', 'pendant-dome', 'rug-runner', 'plant-snake']) {
       const it = st().addItem(type, { x: 0, z: 0 });
       expect(it, type).not.toBeNull();
       expect(isColliding(st().doc, it!), type).toBe(false);
     }
+    const ids = st().doc.items.map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 
 describe('persistence', () => {
-  it('round-trips through JSON', () => {
+  it('[PERS-004][DOC-001] round-trips through JSON', () => {
     const json = exportJSON(st().doc, st().env);
     const back = importJSON(json);
     expect(back?.doc.items.length).toBe(st().doc.items.length);
     expect(back?.doc.finishes).toEqual(st().doc.finishes);
   });
 
-  it('repairs damaged documents', () => {
+  it('[PERS-003] repairs damaged documents', () => {
     const bad = {
       name: '',
       finishes: { floor: 'nope', walls: { north: 'paint-sage' } },
@@ -104,5 +106,23 @@ describe('persistence', () => {
     expect(doc.finishes.walls.east).toBe('paint-white');
     expect(Number.isFinite(doc.items[0].position[2])).toBe(true);
     expect(importJSON('not json')).toBeNull();
+  });
+});
+
+describe('history scope', () => {
+  it('[HIST-004] loading a template is undoable', () => {
+    const before = st().doc;
+    st().newFromPreset('terracota');
+    expect(st().doc.name).toBe('Terracota Mediterránea');
+    st().undo();
+    expect(st().doc).toBe(before);
+  });
+
+  it('[HIST-005][DOC-005] environment changes stay out of the history and the document', () => {
+    const past = st().past.length;
+    st().setEnv({ time: 9, lampMode: 'on', exposure: 1.2 });
+    expect(st().past.length).toBe(past);
+    expect(Object.keys(st().doc)).not.toContain('env');
+    expect(JSON.parse(JSON.stringify(st().doc))).toEqual(st().doc);
   });
 });
