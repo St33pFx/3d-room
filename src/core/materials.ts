@@ -221,7 +221,7 @@ const M: MaterialDef[] = [
   { id: 'fx-rubber', name: 'Goma', category: 'fixed', color: '#222', roughness: 0.9 },
   { id: 'ext-lawn', name: 'Césped', category: 'fixed', color: '#6f8a4e', roughness: 0.95, texture: { kind: 'concrete', tile: 6, colors: ['#71894c', '#5b7440', '#86a05e'], seed: 131, bump: 0.6 } },
   { id: 'ext-deck', name: 'Tarima exterior', category: 'fixed', color: '#8a6a4c', roughness: 0.7, texture: { kind: 'slats', tile: 1.2, colors: ['#94724f', '#77593d', '#a7845f', '#3a2c20'], seed: 133, bump: 0.8 } },
-  { id: 'ext-gravel', name: 'Grava', category: 'fixed', color: '#bdb5a8', roughness: 0.95, texture: { kind: 'terrazzo', tile: 0.25, colors: ['#bcb4a7', '#cfc8bc', '#9d968a', '#ada598', '#d8d2c7', '#8f887d'], seed: 135, bump: 0.8 } },
+  { id: 'ext-gravel', name: 'Losa exterior', category: 'fixed', color: '#c4bcb0', roughness: 0.9, texture: { kind: 'concrete', tile: 2.5, colors: ['#c6beb2', '#b1a99c', '#d3ccc1'], seed: 135, bump: 0.5, grid: 4 } },
   { id: 'ext-bark', name: 'Corteza', category: 'fixed', color: '#5a4636', roughness: 0.9 },
   { id: 'ext-plinth', name: 'Zócalo', category: 'fixed', color: '#e6e1d9', roughness: 0.9 },
   { id: 'ext-foliage', name: 'Follaje', category: 'fixed', color: '#4f6b3a', roughness: 0.85, texture: { kind: 'concrete', tile: 1.5, colors: ['#50703a', '#3c5a2c', '#6d8c4c'], seed: 137, bump: 1 } },

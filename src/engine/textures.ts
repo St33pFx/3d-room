@@ -378,6 +378,7 @@ const concrete: Gen = (b, spec, n) => {
       b.set(y * S + x, c, blot * 0.6 + speck * 0.4, 0.9 + blot * 0.25);
     }
   }
+  gridSeams(b, spec.grid, scale(c1, 0.85), rng((spec.seed ?? 1) + 3));
 };
 
 const terrazzo: Gen = (b, spec, n, r) => {

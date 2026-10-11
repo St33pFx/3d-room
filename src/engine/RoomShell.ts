@@ -3,7 +3,7 @@ import { HALF_D, HALF_W, ROOM, WALL_IDS, WALLS, type Opening, type WallSpec } fr
 import type { RoomFinishes, WallId } from '../core/types';
 import type { MaterialLibrary } from './MaterialLibrary';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { box, cyl, mergeAll, rbox } from './geo';
+import { box, cyl, mergeAll, rbox, worldUVs } from './geo';
 
 // The architectural shell: walls with real openings, floor, ceiling,
 // joinery (windows, garden door, entry door, baseboards) and the garden that
@@ -290,6 +290,7 @@ export class RoomShell {
         p.setXYZ(i, vx * k, vy * k * sy, vz * k);
       }
       g.computeVertexNormals();
+      worldUVs(g);
       leafGeos.push(g.translate(x, y, z));
     };
     const tree = (x: number, z: number, s: number) => {
@@ -335,7 +336,7 @@ export class RoomShell {
     const prev = this.finishes;
     this.finishes = f;
     if (!prev || prev.floor !== f.floor) this.floor.material = this.lib.get(f.floor);
-    if (!prev || prev.ceiling !== f.ceiling) this.ceiling.material = this.lib.get(f.ceiling);
+    if ((!prev || prev.ceiling !== f.ceiling) && this.ceilingVisible) this.ceiling.material = this.lib.get(f.ceiling);
     for (const id of WALL_IDS) {
       const parts = this.walls.get(id)!;
       if (!prev || prev.walls[id] !== f.walls[id] || !parts.cut) {

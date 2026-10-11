@@ -206,6 +206,15 @@ input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .pop-row.presets { flex-wrap: wrap; gap: 6px; }
 .pop-label { display: inline-flex; align-items: center; gap: 6px; width: 104px; color: var(--ink-2); font-weight: 550; }
 
+.views-pop { left: 0; right: auto; width: 290px; }
+.pop-head { display: flex; flex-direction: column; gap: 2px; }
+.view-list { display: flex; flex-direction: column; gap: 4px; }
+.view-row { display: flex; align-items: center; gap: 4px; }
+.view-go { flex: 1; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.6); border: 1px solid var(--line); font-weight: 550; text-align: left; }
+.view-go:hover { background: white; }
+.view-del { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); }
+.view-del:hover { background: #fff0ee; color: var(--danger); }
+
 /* ── Contextual toolbar ──────────────────────────────────────────────── */
 .ctx-bar { position: fixed; left: 0; top: 0; opacity: 0; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 13px; z-index: 6; transition: opacity 0.2s; animation: pop 0.25s var(--ease); white-space: nowrap; }
 .ctx-name { display: inline-flex; align-items: center; gap: 5px; font-weight: 620; font-size: 12px; padding: 0 10px 0 8px; border-right: 1px solid var(--line-2); margin-right: 2px; }

@@ -224,11 +224,12 @@ export function materialSwatch(id: string, size = 72): string {
   c.width = c.height = size;
   const ctx = c.getContext('2d')!;
   if (def.texture) {
-    const tsize = def.texture.stretch ? 128 : 96;
+    const big = def.category === 'floor' || def.category === 'wall';
+    const tsize = def.texture.stretch ? 128 : big ? 256 : 96;
     const maps = generateTexture({ ...def.texture }, tsize, false);
     const tc = mapsToCanvas(maps.color, tsize);
-    // show roughly 25cm of the material (or the whole artwork/rug)
-    const frac = def.texture.stretch ? 1 : Math.min(1, 0.35 / def.texture.tile);
+    // show a realistic patch of the material (or the whole artwork/rug)
+    const frac = def.texture.stretch ? 1 : Math.min(1, (big ? 0.9 : 0.35) / def.texture.tile);
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(tc, 0, 0, tsize * frac, tsize * frac, 0, 0, size, size);
   } else {

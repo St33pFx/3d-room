@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Box, Clapperboard, Footprints, Grid2x2, Lamp, LampCeiling, Moon, Pause, Play, Sun, SunMedium, Sunrise, Sunset, Compass, Aperture } from 'lucide-react';
+import { Bookmark, BookmarkPlus, X, Box, Clapperboard, Footprints, Grid2x2, Lamp, LampCeiling, Moon, Pause, Play, Sun, SunMedium, Sunrise, Sunset, Compass, Aperture } from 'lucide-react';
 import type { CameraMode } from '../core/types';
 import { computeSun } from '../engine/Lighting';
 import { useStore } from '../state/store';
 import { formatTime } from './commands';
+import { getEngine } from '../engine/Engine';
 
 // Bottom dock: camera modes on the left, light & time of day on the right.
 
@@ -45,6 +46,10 @@ export function Dock() {
   const timelapse = useStore((s) => s.timelapse);
   const setTimelapse = useStore((s) => s.setTimelapse);
   const [more, setMore] = useState(false);
+  const [views, setViews] = useState(false);
+  const bookmarks = useStore((s) => s.doc.bookmarks);
+  const addBookmark = useStore((s) => s.addBookmark);
+  const removeBookmark = useStore((s) => s.removeBookmark);
   const gradient = useMemo(skyGradient, []);
   const sun = computeSun(env.time, env.orientation);
   const SunIcon = sun.night > 0.5 ? Moon : sun.golden > 0.4 ? Sunset : Sun;
@@ -59,6 +64,10 @@ export function Dock() {
             <span>{m.label}</span>
           </button>
         ))}
+        <button className={`icon-btn${views ? ' is-on' : ''}`} onClick={() => (setViews(!views), setMore(false))} title="Vistas guardadas">
+          <Bookmark size={16} />
+          {bookmarks.length > 0 && <span className="badge">{bookmarks.length}</span>}
+        </button>
       </div>
       <div className="dock-sep" />
       <div className="dock-group time">
@@ -95,10 +104,41 @@ export function Dock() {
           {env.lampMode === 'off' ? <LampCeiling size={16} /> : <Lamp size={16} />}
           <span className="badge">{env.lampMode === 'auto' ? 'A' : env.lampMode === 'on' ? 'I' : 'O'}</span>
         </button>
-        <button className={`icon-btn${more ? ' is-on' : ''}`} onClick={() => setMore(!more)} title="Más ajustes de luz">
+        <button className={`icon-btn${more ? ' is-on' : ''}`} onClick={() => (setMore(!more), setViews(false))} title="Más ajustes de luz">
           <Aperture size={16} />
         </button>
       </div>
+      {views && (
+        <div className="popover views-pop">
+          <div className="pop-head">
+            <strong>Vistas guardadas</strong>
+            <span className="small">Se guardan con el proyecto</span>
+          </div>
+          {bookmarks.length === 0 && <p className="hint">Encuadra la escena como te guste y guárdala para volver con un clic.</p>}
+          <div className="view-list">
+            {bookmarks.map((b) => (
+              <div key={b.id} className="view-row">
+                <button className="view-go" onClick={() => getEngine()?.gotoView(b)}>
+                  <Bookmark size={14} /> {b.name}
+                </button>
+                <button className="view-del" onClick={() => removeBookmark(b.id)} title="Eliminar vista">
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            className="ghost-btn"
+            disabled={mode === 'cinematic'}
+            onClick={() => {
+              const v = getEngine()?.currentView(`Vista ${bookmarks.length + 1}`);
+              if (v) addBookmark(v);
+            }}
+          >
+            <BookmarkPlus size={15} /> Guardar vista actual
+          </button>
+        </div>
+      )}
       {more && (
         <div className="popover light-pop">
           <div className="pop-row presets">

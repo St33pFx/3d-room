@@ -3,7 +3,7 @@ import { defaultMaterials, getDef, itemSize } from '../core/catalog';
 import { descendants, findFloorSpot, findItem, findSurfaceSpot, findWallSpot, rotateItem, wallCoords } from '../core/placement';
 import { createPreset, newId } from '../core/presets';
 import { readAutosave, saveProject, writeAutosave, type SavedProject } from '../core/persistence';
-import type { CameraMode, DesignDoc, EnvironmentState, ItemInstance, RoomFinishes, Selection, SnapMode, WallId } from '../core/types';
+import type { CameraBookmark, CameraMode, DesignDoc, EnvironmentState, ItemInstance, RoomFinishes, Selection, SnapMode, WallId } from '../core/types';
 import { WALLS } from '../core/room';
 
 // Global app state. The design document is immutable: every edit creates a
@@ -71,6 +71,8 @@ export interface AppState {
   duplicateItem: (id: string) => void;
   rotateBy: (id: string, delta: number) => void;
   setFinish: (kind: keyof RoomFinishes, value: string, wall?: WallId | 'all') => void;
+  addBookmark: (b: CameraBookmark) => void;
+  removeBookmark: (id: string) => void;
 
   setEnv: (patch: Partial<EnvironmentState>) => void;
   setTimelapse: (on: boolean) => void;
@@ -302,6 +304,16 @@ export const useStore = create<AppState>()((set, get) => ({
     }
     const labels: Record<keyof RoomFinishes, string> = { floor: 'suelo', walls: 'paredes', ceiling: 'techo', trim: 'molduras', frames: 'carpintería' };
     get().commit({ ...doc, finishes: f }, `Cambiar ${kind === 'walls' && wall && wall !== 'all' ? WALLS[wall].label.toLowerCase() : labels[kind]}`);
+  },
+
+  addBookmark: (b) => {
+    const { doc } = get();
+    get().commit({ ...doc, bookmarks: [...doc.bookmarks, b] }, `Guardar vista ${b.name}`);
+    get().toast(`Vista «${b.name}» guardada`);
+  },
+  removeBookmark: (id) => {
+    const { doc } = get();
+    get().commit({ ...doc, bookmarks: doc.bookmarks.filter((b) => b.id !== id) }, 'Eliminar vista');
   },
 
   setEnv: (patch) => set({ env: { ...get().env, ...patch } }),

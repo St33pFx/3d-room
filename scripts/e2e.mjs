@@ -120,6 +120,51 @@ check('vase re-parents onto the sideboard', vase.parentId === 'sideboard', vase.
 check('no intersections after surface drag', (await S(() => window.__engine.validate())).length === 0, JSON.stringify(await S(() => window.__engine.validate())));
 await shot('surface');
 
+// wall art slides along the wall and never covers the window
+p = await S(() => window.__engine.screenOf('art-living'));
+const leftOfWall = await S(() => window.__engine.screenPoint(-1.6, 1.62, -2.8));
+await page.mouse.move(p.x, p.y);
+await page.mouse.down();
+for (let i = 1; i <= 15; i++) await page.mouse.move(p.x + ((leftOfWall.x - p.x) * i) / 15, p.y + ((leftOfWall.y - p.y) * i) / 15);
+await page.mouse.up();
+const art = await S(() => window.__store.getState().doc.items.find((i) => i.id === 'art-living'));
+const artU = art.position[0] + 3.6;
+check('art stays on its wall', art.wall === 'north' && Math.abs(art.position[2] + 2.8) < 1e-6);
+check('art does not overlap the window', artU - 0.35 >= 3.3 || artU + 0.35 <= 0.9 || art.position[1] + 0.5 <= 0.84, `u=${artU.toFixed(2)} y=${art.position[1].toFixed(2)}`);
+check('no intersections after wall drag', (await S(() => window.__engine.validate())).length === 0);
+
+// rotate with the ring handle
+p = await S(() => window.__engine.screenOf('tub'));
+await page.mouse.click(p.x, p.y);
+await settle();
+const tub0 = await S(() => window.__store.getState().doc.items.find((i) => i.id === 'tub'));
+const h = await S(() => { const e = window.__engine; const hd = e.overlays.handle.position; return e.screenPoint(hd.x, hd.y, hd.z); });
+const c = await S(() => { const t = window.__store.getState().doc.items.find((i) => i.id === 'tub'); return window.__engine.screenPoint(t.position[0], 0, t.position[2]); });
+await page.mouse.move(h.x, h.y);
+await page.mouse.down();
+const r0 = Math.hypot(h.x - c.x, h.y - c.y);
+const a0 = Math.atan2(h.y - c.y, h.x - c.x);
+for (let i = 1; i <= 12; i++) { const a = a0 + (i / 12) * 1.2; await page.mouse.move(c.x + Math.cos(a) * r0, c.y + Math.sin(a) * r0); }
+await page.mouse.up();
+const tub1 = await S(() => window.__store.getState().doc.items.find((i) => i.id === 'tub'));
+const stepDeg = ((tub1.rotation - tub0.rotation) * 180) / Math.PI;
+check('handle rotates the piece', Math.abs(stepDeg) > 10, `${stepDeg.toFixed(1)}°`);
+check('rotation snaps to 15°', Math.abs(stepDeg / 15 - Math.round(stepDeg / 15)) < 1e-3 || Math.abs(((tub1.rotation * 180) / Math.PI) / 15 - Math.round(((tub1.rotation * 180) / Math.PI) / 15)) < 1e-3);
+check('no intersections after rotating', (await S(() => window.__engine.validate())).length === 0);
+
+// saved views
+await page.click('button[title="Vistas guardadas"]');
+await page.click('text=Guardar vista actual');
+check('view bookmark saved', (await S(() => window.__store.getState().doc.bookmarks.length)) === 1);
+await page.click('button[title="Vistas guardadas"]');
+
+// time of day
+await page.click('button[title="Más ajustes de luz"]');
+await page.click('.light-pop .chip:has-text("Atardecer")');
+check('time preset applies', Math.abs((await S(() => window.__store.getState().env.time)) - 19.6) < 0.01);
+await page.click('button[title="Más ajustes de luz"]');
+await shot('sunset');
+
 // save, reload, restore
 await page.keyboard.press('Control+s');
 const projects = await S(() => JSON.parse(localStorage.getItem('atelier.projects.v1') || '[]').length);

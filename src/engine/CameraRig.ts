@@ -228,7 +228,7 @@ export class CameraRig {
     this.flyTo(center.clone().addScaledVector(dir, dist), center, this.camera.fov, 0.8);
   }
 
-  private syncYawPitch() {
+  syncYawPitch() {
     const d = new THREE.Vector3();
     this.camera.getWorldDirection(d);
     this.yaw = Math.atan2(-d.x, -d.z);

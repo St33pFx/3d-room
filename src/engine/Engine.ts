@@ -36,7 +36,7 @@ export class Engine {
   readonly probe: EnvironmentProbe;
   readonly thumbs: Thumbnails;
 
-  private clock = new THREE.Clock();
+  private lastTime = performance.now();
   private raf = 0;
   private unsub: (() => void)[] = [];
   private envDirty = 2;
@@ -130,7 +130,7 @@ export class Engine {
       this.raf = requestAnimationFrame(loop);
       if (!this.paused) this.frame();
     };
-    this.clock.start();
+    this.lastTime = performance.now();
     loop();
     setTimeout(() => this.thumbs.generateAll(), 600);
   }
@@ -226,7 +226,9 @@ export class Engine {
   }
 
   private frame() {
-    const dt = Math.min(0.1, this.clock.getDelta());
+    const nowT = performance.now();
+    const dt = Math.min(0.1, (nowT - this.lastTime) / 1000);
+    this.lastTime = nowT;
     const t0 = performance.now();
     const st = useStore.getState();
     this.frameCount++;
@@ -362,18 +364,13 @@ export class Engine {
 
   gotoView(b: CameraBookmark) {
     const st = useStore.getState();
-    const insideRoom = Math.abs(b.position[0]) < 3.6 && Math.abs(b.position[2]) < 2.8 && b.position[1] < 2.8;
-    const mode: CameraMode = insideRoom ? 'walk' : 'orbit';
-    if (st.camera.mode !== mode) {
-      st.setCamera({ mode, tour: false });
-    }
+    const inside = Math.abs(b.position[0]) < 3.6 && Math.abs(b.position[2]) < 2.8 && b.position[1] < 2.8;
+    const mode: CameraMode = inside ? 'walk' : 'orbit';
+    // switching mode starts its own move; the bookmark flight replaces it
+    if (st.camera.mode !== mode) st.setCamera({ mode, tour: false });
     this.rig.flyTo(new THREE.Vector3(...b.position), new THREE.Vector3(...b.target), b.fov, 1.2, () => {
-      if (mode === 'walk') this.rig.setMode('walk', { instant: true });
+      if (mode === 'walk') this.rig.syncYawPitch();
     });
-    if (mode === 'walk') {
-      // keep the requested pose after the mode switch
-      setTimeout(() => this.rig.flyTo(new THREE.Vector3(...b.position), new THREE.Vector3(...b.target), b.fov, 0.01, () => (this.rig as unknown as { syncYawPitch: () => void }).syncYawPitch?.()), 1300);
-    }
   }
 
   /** Render a clean, high-resolution still (no overlays/outlines). */
