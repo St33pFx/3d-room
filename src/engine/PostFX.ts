@@ -5,9 +5,7 @@ import {
   Effect,
   EffectComposer,
   EffectPass,
-  KernelSize,
-  OutlineEffect,
-  RenderPass,
+    RenderPass,
   SMAAEffect,
   SMAAPreset,
   ToneMappingEffect,
@@ -17,7 +15,7 @@ import {
 import { N8AOPostPass } from 'n8ao';
 
 // Post-processing chain: ambient occlusion → bloom → exposure/tonemapping →
-// grading/vignette → SMAA. Outlines highlight the selection.
+// grading/vignette → SMAA.
 
 class GradeEffect extends Effect {
   constructor() {
@@ -54,8 +52,6 @@ class GradeEffect extends Effect {
 
 export class PostFX {
   readonly composer: EffectComposer;
-  readonly outline: OutlineEffect;
-  readonly hoverOutline: OutlineEffect;
   private ao: N8AOPostPass;
   private grade: GradeEffect;
   private bloom: BloomEffect;
@@ -81,32 +77,11 @@ export class PostFX {
     this.ao.setQualityMode('Medium');
     this.composer.addPass(this.ao);
 
-    this.outline = new OutlineEffect(scene, camera, {
-      blendFunction: BlendFunction.SCREEN,
-      edgeStrength: 3.2,
-      pulseSpeed: 0,
-      visibleEdgeColor: 0xff9a55,
-      hiddenEdgeColor: 0x8a4a24,
-      blur: true,
-      kernelSize: KernelSize.VERY_SMALL,
-      xRay: true,
-      multisampling: 0,
-    });
-    this.hoverOutline = new OutlineEffect(scene, camera, {
-      blendFunction: BlendFunction.SCREEN,
-      edgeStrength: 1.6,
-      visibleEdgeColor: 0xffffff,
-      hiddenEdgeColor: 0x555555,
-      blur: true,
-      kernelSize: KernelSize.VERY_SMALL,
-      xRay: false,
-    });
-
     this.bloom = new BloomEffect({ intensity: 0.55, luminanceThreshold: 1.1, luminanceSmoothing: 0.35, mipmapBlur: true, radius: 0.72 });
     this.grade = new GradeEffect();
     const tone = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC });
     const vignette = new VignetteEffect({ offset: 0.32, darkness: 0.42 });
-    this.composer.addPass(new EffectPass(camera, this.bloom, this.grade, tone, this.outline, this.hoverOutline, vignette));
+    this.composer.addPass(new EffectPass(camera, this.bloom, this.grade, tone, vignette));
     this.composer.addPass(new EffectPass(camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));
   }
 

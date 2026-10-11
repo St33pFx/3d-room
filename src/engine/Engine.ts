@@ -11,6 +11,7 @@ import { ItemLayer } from './ItemLayer';
 import { EnvironmentProbe, Lighting } from './Lighting';
 import { MaterialLibrary } from './MaterialLibrary';
 import { Overlays } from './Overlays';
+import { Highlight } from './Highlight';
 import { PostFX } from './PostFX';
 import { RoomShell } from './RoomShell';
 import { Thumbnails } from './Thumbnails';
@@ -30,6 +31,7 @@ export class Engine {
   readonly lighting: Lighting;
   readonly items: ItemLayer;
   readonly overlays = new Overlays();
+  readonly highlight = new Highlight();
   readonly rig: CameraRig;
   readonly interaction: Interaction;
   readonly post: PostFX;
@@ -253,7 +255,8 @@ export class Engine {
 
     // bounce-light probe
     const now = performance.now();
-    if (this.envDirty > 0 && now - this.lastCapture > (st.gesture || st.timelapse ? 260 : 120)) {
+    // (skip while dragging: bounce light settles once the piece is dropped)
+    if (this.envDirty > 0 && !st.gesture && now - this.lastCapture > (st.timelapse ? 260 : 120)) {
       this.captureEnv();
       this.envDirty--;
     }
@@ -278,13 +281,10 @@ export class Engine {
     this.overlays.showHover(hov ?? null, hov ? worldPose(st.doc, hov) : null);
     this.overlays.showGuides(this.interaction.guides);
 
-    // outlines
-    const selObjs = sel ? this.items.meshesFor(sel.id) : [];
-    const outlineSet = this.post.outline.selection;
-    if (!sameSet(outlineSet, selObjs)) outlineSet.set(selObjs);
-    const hovObjs = hov && !st.gesture ? this.items.meshesFor(hov.id) : [];
-    const hoverSet = this.post.hoverOutline.selection;
-    if (!sameSet(hoverSet, hovObjs)) hoverSet.set(hovObjs);
+    // rim highlight on the selected / hovered piece
+    this.highlight.setSelected(sel ? this.items.meshesFor(sel.id) : [], st.invalid);
+    this.highlight.setHovered(hov && !st.gesture ? this.items.meshesFor(hov.id) : []);
+    this.highlight.setVisible(this.overlaysVisible);
   }
 
   private adaptResolution(ms: number, dt: number) {
@@ -352,7 +352,7 @@ export class Engine {
   }
 
   resetView() {
-    if (this.rig.mode === 'orbit') this.rig.flyTo(ORBIT_HOME.pos, ORBIT_HOME.target, ORBIT_HOME.fov, 1.1);
+    if (this.rig.mode === 'orbit') this.rig.flyTo(ORBIT_HOME.pos, ORBIT_HOME.target, this.rig.homeFov(), 1.1);
     else this.rig.setMode(this.rig.mode);
   }
 
@@ -377,16 +377,12 @@ export class Engine {
   async screenshot(scale = 2, type = 'image/png'): Promise<Blob | null> {
     const st = useStore.getState();
     const prevPR = this.pixelRatio;
-    const outlineSel = [...this.post.outline.selection];
-    const hoverSel = [...this.post.hoverOutline.selection];
-    this.post.outline.selection.clear();
-    this.post.hoverOutline.selection.clear();
+    this.highlight.setVisible(false);
     this.renderer.setPixelRatio(Math.min(4, (window.devicePixelRatio || 1) * scale));
     this.resize();
     this.post.render(0);
     const blob = await new Promise<Blob | null>((res) => this.renderer.domElement.toBlob(res, type, 0.95));
-    this.post.outline.selection.set(outlineSel);
-    this.post.hoverOutline.selection.set(hoverSel);
+    this.highlight.setVisible(this.overlaysVisible);
     this.renderer.setPixelRatio(prevPR);
     this.resize();
     void st;
@@ -395,15 +391,14 @@ export class Engine {
 
   /** Small JPEG of the current view for project cards. */
   thumbnail(width = 360): string {
-    const outlineSel = [...this.post.outline.selection];
-    this.post.outline.selection.clear();
+    this.highlight.setVisible(false);
     this.post.render(0);
     const src = this.renderer.domElement;
     const c = document.createElement('canvas');
     c.width = width;
     c.height = Math.round((width * src.height) / src.width);
     c.getContext('2d')!.drawImage(src, 0, 0, c.width, c.height);
-    this.post.outline.selection.set(outlineSel);
+    this.highlight.setVisible(this.overlaysVisible);
     return c.toDataURL('image/jpeg', 0.82);
   }
 
@@ -442,12 +437,6 @@ export class Engine {
   }
 }
 
-function sameSet(sel: Iterable<THREE.Object3D>, arr: THREE.Object3D[]): boolean {
-  const s = new Set(sel);
-  if (s.size !== arr.length) return false;
-  for (const o of arr) if (!s.has(o)) return false;
-  return true;
-}
 
 let instance: Engine | null = null;
 export function setEngine(e: Engine | null) {

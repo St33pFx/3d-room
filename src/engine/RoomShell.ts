@@ -369,6 +369,7 @@ export class RoomShell {
       const mats = parts.mesh.material as THREE.Material[];
       mats[0] = cut ? this.ghostMat : this.lib.get(this.finishes?.walls[id] ?? 'paint-white');
       mats[1] = cut ? this.ghostMat : this.revealMat;
+
       parts.stub.visible = cut;
       parts.joinery.visible = !cut;
       parts.mesh.userData.cut = cut;
@@ -378,6 +379,7 @@ export class RoomShell {
     if (showCeiling !== this.ceilingVisible) {
       this.ceilingVisible = showCeiling;
       this.ceiling.material = showCeiling ? this.lib.get(this.finishes?.ceiling ?? 'paint-white') : this.ghostMat;
+
     }
   }
 

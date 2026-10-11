@@ -90,7 +90,7 @@ export class CameraRig {
   private walkVel = new THREE.Vector3();
   private looking = false;
   private lastPointer = { x: 0, y: 0 };
-  private savedOrbit = { pos: ORBIT_HOME.pos.clone(), target: ORBIT_HOME.target.clone() };
+  private savedOrbit = { pos: ORBIT_HOME.pos.clone(), target: ORBIT_HOME.target.clone(), fov: ORBIT_HOME.fov };
   /** collision test for walk mode: returns corrected XZ */
   collide?: (x: number, z: number) => [number, number];
   /** True while an item drag owns the pointer. */
@@ -108,7 +108,7 @@ export class CameraRig {
     this.controls.screenSpacePanning = true;
     this.applyOrbitLimits();
     camera.position.copy(ORBIT_HOME.pos);
-    camera.fov = ORBIT_HOME.fov;
+    camera.fov = this.homeFov();
     this.controls.target.copy(ORBIT_HOME.target);
     camera.updateProjectionMatrix();
     this.controls.update();
@@ -119,6 +119,12 @@ export class CameraRig {
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', () => this.keys.clear());
+  }
+
+  /** Wider framing on narrower screens so the side panels don't hide the room. */
+  homeFov(): number {
+    const w = this.dom.clientWidth || window.innerWidth;
+    return Math.min(48, ORBIT_HOME.fov + Math.max(0, (1560 - w) / 28));
   }
 
   private applyOrbitLimits() {
@@ -135,7 +141,7 @@ export class CameraRig {
   setMode(mode: CameraMode, opts: { shot?: number; instant?: boolean } = {}) {
     const prev = this.mode;
     if (prev === 'orbit' && mode !== 'orbit' && !this.transition) {
-      this.savedOrbit = { pos: this.camera.position.clone(), target: this.controls.target.clone() };
+      this.savedOrbit = { pos: this.camera.position.clone(), target: this.controls.target.clone(), fov: this.camera.fov };
     }
     this.mode = mode;
     this.keys.clear();
@@ -145,7 +151,7 @@ export class CameraRig {
       c.enabled = true;
       const pos = prev === 'orbit' ? ORBIT_HOME.pos : this.savedOrbit.pos;
       const target = prev === 'orbit' ? ORBIT_HOME.target : this.savedOrbit.target;
-      this.flyTo(pos, target, ORBIT_HOME.fov, opts.instant ? 0 : 1.3);
+      this.flyTo(pos, target, prev === 'orbit' ? this.homeFov() : this.savedOrbit.fov, opts.instant ? 0 : 1.3);
     } else if (mode === 'plan') {
       c.enabled = true;
       c.enableRotate = false;

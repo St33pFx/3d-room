@@ -9,7 +9,7 @@ const page = await browser.newPage({ viewport: { width: +w, height: +h }, device
 const logs = [];
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
-await page.goto(`http://localhost:5173/${suffix}`, { waitUntil: 'load' });
+await page.goto(`${process.env.URL || 'http://localhost:5173/'}${suffix}`, { waitUntil: 'load' });
 await page.waitForFunction(() => document.querySelector('.scene-canvas') && !document.querySelector('.loading'), null, { timeout: 180000 }).catch(() => logs.push('timeout waiting ready'));
 await page.evaluate(() => { if (window.__engine) window.__engine.paused = true; });
 for (const snippet of js) {

@@ -10,9 +10,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          three: ['three'],
-          fx: ['postprocessing', 'n8ao'],
+        manualChunks(id: string) {
+          if (id.includes('node_modules/three')) return 'three';
+          if (id.includes('node_modules/postprocessing') || id.includes('node_modules/n8ao')) return 'fx';
+          return undefined;
         },
       },
     },
