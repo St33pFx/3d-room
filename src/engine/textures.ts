@@ -434,8 +434,8 @@ const linen: Gen = (b, spec, n) => {
       const slubX = n.get(u * 4, v * threads, 4, threads);
       const slubY = n.get(u * threads, v * 4, threads, 4);
       const slub = (slubX + slubY) * 0.5;
-      const c = scale(c0, 0.86 + h * 0.12 + (slub - 0.5) * 0.12);
-      b.set(y * S + x, c, h * 0.6 + slub * 0.4, 1);
+      const c = scale(c0, 0.9 + h * 0.08 + (slub - 0.5) * 0.05);
+      b.set(y * S + x, c, h * 0.7 + slub * 0.15, 1);
     }
   }
 };
@@ -636,7 +636,7 @@ function canvasGen(
   return (b, spec, n, r) => {
     const S = b.size;
     const cv = makeCanvas(S);
-    const ctx = cv.getContext('2d')!;
+    const ctx = cv.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
     draw(ctx, S, spec.colors, r, n);
     const img = ctx.getImageData(0, 0, S, S).data;
     for (let j = 0; j < S * S; j++) {
@@ -938,6 +938,8 @@ const GENERATORS: Record<string, Gen> = {
 };
 
 export function makeCanvas(size: number, h = size): HTMLCanvasElement {
+  // Workers have no DOM: fall back to OffscreenCanvas (same 2D API subset).
+  if (typeof document === 'undefined') return new OffscreenCanvas(size, h) as unknown as HTMLCanvasElement;
   const c = document.createElement('canvas');
   c.width = size;
   c.height = h;
@@ -947,9 +949,11 @@ export function makeCanvas(size: number, h = size): HTMLCanvasElement {
 /** Preferred resolution for a texture kind. */
 export function defaultSize(spec: TextureSpec): number {
   switch (spec.kind) {
+    case 'marble':
+      // veined stone is expensive; furniture-scale pieces don't need 1k
+      return spec.grid ? 1024 : 512;
     case 'planks':
     case 'herringbone':
-    case 'marble':
     case 'rug-berber':
     case 'rug-border':
     case 'rug-abstract':

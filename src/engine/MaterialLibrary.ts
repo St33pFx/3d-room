@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { getMaterial, type MaterialDef, type TextureSpec } from '../core/materials';
-import { generateTexture, mapsToCanvas, type TextureMaps } from './textures';
+import { mapsToCanvas, type TextureMaps } from './textures';
+import { texturePool } from './texturePool';
 
 // Turns material definitions into shared three.js PBR materials. Textures are
 // synthesised lazily on a queue so the UI never blocks for long; materials
@@ -12,8 +13,6 @@ interface TextureSet {
   rough?: THREE.Texture;
 }
 
-type Job = { key: string; spec: TextureSpec; resolve: () => void };
-
 function texKey(spec: TextureSpec): string {
   return JSON.stringify([spec.kind, spec.colors, spec.seed, spec.bump, spec.grid]);
 }
@@ -23,8 +22,7 @@ export class MaterialLibrary {
   private textures = new Map<string, TextureSet>();
   private pending = new Map<string, Promise<void>>();
   private waiting = new Map<string, Set<THREE.MeshStandardMaterial>>();
-  private queue: Job[] = [];
-  private running = false;
+  private inflight = new Set<Promise<void>>();
   private anisotropy = 8;
   onTextureReady?: () => void;
 
@@ -119,9 +117,12 @@ export class MaterialLibrary {
     if (this.textures.has(key)) return Promise.resolve();
     let p = this.pending.get(key);
     if (!p) {
-      p = new Promise<void>((resolve) => this.queue.push({ key, spec, resolve }));
+      p = texturePool()
+        .generate(spec, undefined, true)
+        .then((maps) => this.finish(key, spec, maps))
+        .finally(() => this.inflight.delete(p!));
+      this.inflight.add(p);
       this.pending.set(key, p);
-      this.pump();
     }
     return p;
   }
@@ -144,17 +145,19 @@ export class MaterialLibrary {
     m.needsUpdate = true;
   }
 
-  private build(spec: TextureSpec): TextureSet {
-    const maps: TextureMaps = generateTexture(spec);
+  private build(spec: TextureSpec, maps: TextureMaps): TextureSet {
     const mk = (data: Uint8ClampedArray, srgb: boolean) => {
-      const t = new THREE.CanvasTexture(mapsToCanvas(data, maps.size));
+      const t = new THREE.DataTexture(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), maps.size, maps.size, THREE.RGBAFormat);
+      t.flipY = true; // match canvas orientation used by the generators
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.anisotropy = this.anisotropy;
       t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
       if (!spec.stretch) t.repeat.set(1 / spec.tile, 1 / spec.tile);
       else t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
       t.generateMipmaps = true;
+      t.magFilter = THREE.LinearFilter;
       t.minFilter = THREE.LinearMipmapLinearFilter;
+      t.needsUpdate = true;
       return t;
     };
     return {
@@ -164,49 +167,32 @@ export class MaterialLibrary {
     };
   }
 
-  private runJob(job: Job) {
-    const set = this.build(job.spec);
-    this.textures.set(job.key, set);
-    this.pending.delete(job.key);
-    const mats = this.waiting.get(job.key);
+  private finish(key: string, spec: TextureSpec, maps: TextureMaps) {
+    const set = this.build(spec, maps);
+    this.textures.set(key, set);
+    this.pending.delete(key);
+    const mats = this.waiting.get(key);
     if (mats) {
-      for (const m of mats) this.apply(m, set, job.spec);
-      this.waiting.delete(job.key);
+      for (const m of mats) this.apply(m, set, spec);
+      this.waiting.delete(key);
     }
-    job.resolve();
     this.onTextureReady?.();
   }
 
-  private pump() {
-    if (this.running) return;
-    this.running = true;
-    const step = () => {
-      const job = this.queue.shift();
-      if (!job) {
-        this.running = false;
-        return;
-      }
-      this.runJob(job);
-      setTimeout(step, 0);
-    };
-    setTimeout(step, 0);
-  }
-
-  /** Synchronously-ish drain the queue, reporting progress. */
+  /** Wait for every requested texture, reporting progress. */
   async flush(onProgress?: (done: number, total: number) => void): Promise<void> {
-    const total = this.queue.length;
+    let total = this.inflight.size;
     let done = 0;
-    while (this.queue.length) {
-      const job = this.queue.shift()!;
-      this.runJob(job);
-      done++;
+    while (this.inflight.size) {
+      total = Math.max(total, done + this.inflight.size);
+      await Promise.race(this.inflight);
+      done = total - this.inflight.size;
       onProgress?.(done, total);
-      await new Promise((r) => setTimeout(r, 0));
     }
   }
 
   get queued(): number {
-    return this.queue.length;
+    return this.inflight.size;
   }
 }
 
@@ -214,8 +200,8 @@ export class MaterialLibrary {
 
 const swatchCache = new Map<string, string>();
 
-/** Small preview image (data URL) for a material, rendered on a sphere-ish disc. */
-export function materialSwatch(id: string, size = 72): string {
+/** Small preview image (data URL) for a material, generated off-thread. */
+export async function materialSwatch(id: string, size = 72): Promise<string> {
   const key = `${id}:${size}`;
   const hit = swatchCache.get(key);
   if (hit) return hit;
@@ -226,7 +212,7 @@ export function materialSwatch(id: string, size = 72): string {
   if (def.texture) {
     const big = def.category === 'floor' || def.category === 'wall';
     const tsize = def.texture.stretch ? 128 : big ? 256 : 96;
-    const maps = generateTexture({ ...def.texture }, tsize, false);
+    const maps = await texturePool().generate({ ...def.texture }, tsize, false);
     const tc = mapsToCanvas(maps.color, tsize);
     // show a realistic patch of the material (or the whole artwork/rug)
     const frac = def.texture.stretch ? 1 : Math.min(1, (big ? 0.9 : 0.35) / def.texture.tile);

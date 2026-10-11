@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { getDef } from '../core/catalog';
 import { findItem, footprintAABB, worldPose, boxesAt, obstacles } from '../core/placement';
 import { HALF_D, HALF_W } from '../core/room';
-import { createPreset } from '../core/presets';
 import { overlapMTV } from '../core/geometry';
 import type { CameraBookmark, CameraMode, DesignDoc, EnvironmentState } from '../core/types';
 import { useStore, type AppState } from '../state/store';
@@ -112,13 +111,11 @@ export class Engine {
   /** Generate the textures needed for the current design, reporting progress. */
   async preload() {
     const set = useStore.getState().setLoading;
-    // touch every material used by the presets so their textures are queued
-    for (const id of ['casa-luz', 'nogal-noche', 'terracota']) {
-      const d = createPreset(id);
-      for (const it of d.items) for (const m of Object.values(it.materials)) this.lib.get(m);
-      for (const m of [d.finishes.floor, d.finishes.ceiling, d.finishes.trim, d.finishes.frames, ...Object.values(d.finishes.walls)]) this.lib.get(m);
-    }
-    for (const m of [...RoomShell.EXTERIOR_MATERIALS, 'bark', 'soil']) this.lib.get(m);
+    // queue the textures the current design needs (others stream in later)
+    const d = useStore.getState().doc;
+    for (const it of d.items) for (const m of Object.values(it.materials)) this.lib.get(m);
+    for (const m of [d.finishes.floor, d.finishes.ceiling, d.finishes.trim, d.finishes.frames, ...Object.values(d.finishes.walls)]) this.lib.get(m);
+    for (const m of [...RoomShell.EXTERIOR_MATERIALS, 'bark', 'soil', 'fx-pillow', 'leaf-olive']) this.lib.get(m);
     await this.lib.flush((done, total) => set({ done, total, label: 'Tejiendo materiales' }));
     set({ label: 'Encendiendo la luz', done: 1, total: 1 });
     // first frames: settle the bounce lighting with a couple of captures

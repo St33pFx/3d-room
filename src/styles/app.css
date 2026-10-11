@@ -298,10 +298,11 @@ input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .tips { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--ink-2); line-height: 1.5; }
 .tips li::marker { color: var(--accent); font-weight: 700; }
 .shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin: 0; }
-.shortcuts div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
-.shortcuts dt { white-space: nowrap; }
-.shortcuts dd { margin: 0; color: var(--ink-2); text-align: right; }
-.sc-or { color: var(--faint); }
+.shortcuts div { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.shortcuts dt { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
+.shortcuts dd { margin: 0; color: var(--ink-2); }
+.sc-alt { display: inline-flex; align-items: center; gap: 2px; }
+.sc-or { color: var(--faint); margin: 0 3px; }
 
 /* ── Loading ─────────────────────────────────────────────────────────── */
 .loading { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(120% 90% at 50% 20%, #f7f2ea 0%, #e6dfd3 100%); z-index: 50; transition: opacity 0.9s var(--ease), visibility 0.9s; }

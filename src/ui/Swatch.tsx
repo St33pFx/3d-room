@@ -2,41 +2,24 @@ import { useEffect, useState } from 'react';
 import { getMaterial } from '../core/materials';
 import { materialSwatch } from '../engine/MaterialLibrary';
 
-// Material preview chips. Texture swatches are generated lazily in idle time
-// (they're procedural) and cached for the session.
+// Material preview chips. Texture swatches are generated in the texture
+// workers on first use and cached for the session.
 
 const cache = new Map<string, string>();
-const queue: (() => void)[] = [];
-let pumping = false;
-
-function pump() {
-  if (pumping) return;
-  pumping = true;
-  const step = () => {
-    const job = queue.shift();
-    if (!job) {
-      pumping = false;
-      return;
-    }
-    job();
-    setTimeout(step, 0);
-  };
-  setTimeout(step, 0);
-}
 
 export function useSwatch(id: string): string | undefined {
   const [url, setUrl] = useState(() => cache.get(id));
   useEffect(() => {
-    if (cache.has(id)) {
-      setUrl(cache.get(id));
+    const hit = cache.get(id);
+    if (hit) {
+      setUrl(hit);
       return;
     }
     let alive = true;
-    queue.push(() => {
-      if (!cache.has(id)) cache.set(id, materialSwatch(id, 72));
-      if (alive) setUrl(cache.get(id));
+    materialSwatch(id, 72).then((u) => {
+      cache.set(id, u);
+      if (alive) setUrl(u);
     });
-    pump();
     return () => {
       alive = false;
     };

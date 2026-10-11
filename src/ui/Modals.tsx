@@ -5,6 +5,7 @@ import { PRESETS } from '../core/presets';
 import { useStore } from '../state/store';
 import { exportDesign, importDesign, saveDesign } from './commands';
 import { useSwatch } from './Swatch';
+import { getMaterial } from '../core/materials';
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   useEffect(() => {
@@ -38,7 +39,7 @@ function PresetSwatches({ ids }: { ids: string[] }) {
 }
 function PresetChip({ id }: { id: string }) {
   const url = useSwatch(id);
-  return <span style={{ backgroundImage: url ? `url(${url})` : undefined }} />;
+  return <span style={{ backgroundColor: getMaterial(id).color, backgroundImage: url ? `url(${url})` : undefined }} />;
 }
 
 function Templates({ onPick }: { onPick: (id: string) => void }) {
@@ -171,25 +172,27 @@ export function ProjectsModal() {
   );
 }
 
-const SHORTCUTS: [string, string][] = [
-  ['Clic / arrastrar', 'Seleccionar y mover piezas'],
-  ['Mayús + arrastrar', 'Mover sin ajuste'],
-  ['Q · E', 'Girar 15°'],
-  ['R', 'Girar 90°'],
-  ['Flechas', 'Desplazar 5 cm (Mayús: 1 cm)'],
-  ['Ctrl D', 'Duplicar'],
-  ['Supr', 'Eliminar'],
-  ['L', 'Bloquear / desbloquear'],
-  ['F · doble clic', 'Encuadrar selección'],
-  ['Ctrl Z · Ctrl Mayús Z', 'Deshacer · Rehacer'],
-  ['Ctrl S', 'Guardar'],
-  ['G', 'Cambiar modo de ajuste'],
-  ['1 · 2 · 3 · 4', 'Maqueta · Planta · Paseo · Cine'],
-  ['W A S D', 'Caminar (modo paseo)'],
-  ['Espacio', 'Reproducir el paso del día'],
-  ['H', 'Ocultar la interfaz'],
-  ['P', 'Capturar imagen'],
-  ['Esc', 'Deseleccionar / salir'],
+// each entry: alternatives (separated by ·), each a chord of keys
+const SHORTCUTS: [string[][], string][] = [
+  [[['Clic'], ['Arrastrar']], 'Seleccionar · mover piezas'],
+  [[['Mayús', 'Arrastrar']], 'Mover sin ajuste'],
+  [[['Q'], ['E']], 'Girar 15°'],
+  [[['R']], 'Girar 90°'],
+  [[['←↑↓→']], 'Desplazar 5 cm (Mayús: 1 cm)'],
+  [[['Ctrl', 'D']], 'Duplicar'],
+  [[['Supr']], 'Eliminar'],
+  [[['L']], 'Bloquear / desbloquear'],
+  [[['F'], ['Doble clic']], 'Encuadrar la selección'],
+  [[['Ctrl', 'Z']], 'Deshacer'],
+  [[['Ctrl', 'Mayús', 'Z']], 'Rehacer'],
+  [[['Ctrl', 'S']], 'Guardar'],
+  [[['G']], 'Modo de ajuste'],
+  [[['1'], ['2'], ['3'], ['4']], 'Maqueta · Planta · Paseo · Cine'],
+  [[['W', 'A', 'S', 'D']], 'Caminar en modo paseo'],
+  [[['Espacio']], 'Reproducir el paso del día'],
+  [[['H']], 'Ocultar la interfaz'],
+  [[['P']], 'Capturar imagen'],
+  [[['Esc']], 'Deseleccionar / salir'],
 ];
 
 export function ShortcutsModal() {
@@ -198,14 +201,14 @@ export function ShortcutsModal() {
     <Modal title="Atajos de teclado" onClose={() => setUI({ shortcuts: false })}>
       <div className="modal-body">
         <dl className="shortcuts">
-          {SHORTCUTS.map(([k, v]) => (
-            <div key={k}>
+          {SHORTCUTS.map(([alts, v]) => (
+            <div key={v}>
               <dt>
-                {k.split(' · ').map((part, i) => (
-                  <span key={i}>
-                    {i > 0 && <span className="sc-or"> · </span>}
-                    {part.split(' ').map((p, j) => (
-                      <kbd key={j}>{p}</kbd>
+                {alts.map((chord, i) => (
+                  <span key={i} className="sc-alt">
+                    {i > 0 && <span className="sc-or">·</span>}
+                    {chord.map((k) => (
+                      <kbd key={k}>{k}</kbd>
                     ))}
                   </span>
                 ))}
