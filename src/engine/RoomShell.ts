@@ -66,7 +66,7 @@ export class RoomShell {
 
     // structural slab under the floor (visible from the dollhouse view)
     const slab = new THREE.Mesh(box(ROOM.width + 2 * T, 0.32, ROOM.depth + 2 * T), this.lib.get('ext-plinth'));
-    slab.position.y = -0.16 - 0.001;
+    slab.position.y = -0.16 - 0.03; // keep well below the floor: no z-fighting from far away
     slab.receiveShadow = true;
     this.group.add(slab);
 

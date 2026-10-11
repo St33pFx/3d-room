@@ -101,6 +101,10 @@ export interface AddHint {
 }
 
 const HISTORY_LIMIT = 120;
+
+export function isNarrow(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth <= 820;
+}
 let toastId = 1;
 
 function defaultEnv(): EnvironmentState {
@@ -128,8 +132,8 @@ export const useStore = create<AppState>()((set, get) => ({
   camera: { mode: 'orbit', shot: 0, tour: false },
   ui: {
     hidden: false,
-    library: true,
-    inspector: true,
+    library: !isNarrow(),
+    inspector: !isNarrow(),
     snap: 'smart',
     quality: 'high',
     shortcuts: false,
@@ -319,7 +323,14 @@ export const useStore = create<AppState>()((set, get) => ({
   setEnv: (patch) => set({ env: { ...get().env, ...patch } }),
   setTimelapse: (on) => set({ timelapse: on }),
   setCamera: (patch) => set({ camera: { ...get().camera, ...patch } }),
-  setUI: (patch) => set({ ui: { ...get().ui, ...patch } }),
+  setUI: (patch) => {
+    // on phones the panels are bottom sheets: only one at a time
+    if (isNarrow()) {
+      if (patch.library) patch = { ...patch, inspector: false };
+      if (patch.inspector) patch = { ...patch, library: false };
+    }
+    set({ ui: { ...get().ui, ...patch } });
+  },
   toast: (text, action) => {
     const id = toastId++;
     set({ toasts: [...get().toasts.slice(-3), { id, text, action }] });

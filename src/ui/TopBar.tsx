@@ -113,7 +113,7 @@ export function TopBar() {
         <button className="icon-btn" onClick={() => downloadScreenshot()} title="Capturar imagen (P)">
           <Camera size={17} />
         </button>
-        <button className="icon-btn" onClick={() => setUI({ hidden: true })} title="Ocultar interfaz (H)">
+        <button className="icon-btn hide-narrow" onClick={() => setUI({ hidden: true })} title="Ocultar interfaz (H)">
           <EyeOff size={17} />
         </button>
         <div className="menu-wrap" ref={menuRef}>
@@ -134,6 +134,9 @@ export function TopBar() {
               <div className="menu-sep" />
               <button role="menuitem" onClick={() => (setMenu(false), setUI({ quality: quality === 'high' ? 'balanced' : 'high' }))}>
                 <Gauge size={15} /> Calidad: {quality === 'high' ? 'Alta' : 'Equilibrada'}
+              </button>
+              <button role="menuitem" onClick={() => (setMenu(false), setUI({ hidden: true }))}>
+                <EyeOff size={15} /> Ocultar interfaz
               </button>
               <button role="menuitem" onClick={() => (setMenu(false), setUI({ shortcuts: true }))}>
                 <HelpCircle size={15} /> Atajos de teclado

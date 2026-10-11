@@ -69,7 +69,7 @@ export class Engine {
     this.renderer.domElement.className = 'scene-canvas';
     this.renderer.domElement.tabIndex = 0;
 
-    this.camera = new THREE.PerspectiveCamera(36, 1, 0.05, 3000);
+    this.camera = new THREE.PerspectiveCamera(36, 1, 0.08, 2500);
     this.camera.layers.enable(1);
 
     this.shell = new RoomShell(this.lib);
@@ -215,7 +215,7 @@ export class Engine {
         m.envMap = this.lighting.skyEnv;
         m.needsUpdate = true;
       }
-      m.envMapIntensity = 0.45;
+      m.envMapIntensity = id === 'ext-lawn' || id === 'ext-foliage' ? 0.45 : 0.22;
     }
     // Interior: bounce light captured from the room itself.
     const prevFog = this.scene.fog;
@@ -352,7 +352,7 @@ export class Engine {
   }
 
   resetView() {
-    if (this.rig.mode === 'orbit') this.rig.flyTo(ORBIT_HOME.pos, ORBIT_HOME.target, this.rig.homeFov(), 1.1);
+    if (this.rig.mode === 'orbit') this.rig.flyTo(this.rig.homePos(), ORBIT_HOME.target, this.rig.homeFov(), 1.1);
     else this.rig.setMode(this.rig.mode);
   }
 

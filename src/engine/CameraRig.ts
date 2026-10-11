@@ -107,7 +107,7 @@ export class CameraRig {
     this.controls.zoomSpeed = 0.9;
     this.controls.screenSpacePanning = true;
     this.applyOrbitLimits();
-    camera.position.copy(ORBIT_HOME.pos);
+    camera.position.copy(this.homePos());
     camera.fov = this.homeFov();
     this.controls.target.copy(ORBIT_HOME.target);
     camera.updateProjectionMatrix();
@@ -127,11 +127,19 @@ export class CameraRig {
     return Math.min(48, ORBIT_HOME.fov + Math.max(0, (1560 - w) / 28));
   }
 
+  /** Home position, pulled back on tall/narrow screens so the whole room fits. */
+  homePos(): THREE.Vector3 {
+    const w = this.dom.clientWidth || window.innerWidth;
+    const h = this.dom.clientHeight || window.innerHeight;
+    const k = THREE.MathUtils.clamp(Math.pow(1.45 / (w / h), 0.7), 1, 2.4);
+    return ORBIT_HOME.target.clone().add(ORBIT_HOME.pos.clone().sub(ORBIT_HOME.target).multiplyScalar(k));
+  }
+
   private applyOrbitLimits() {
     const c = this.controls;
     c.enableRotate = true;
     c.minDistance = 1.2;
-    c.maxDistance = 24;
+    c.maxDistance = 32;
     c.minPolarAngle = 0.05;
     c.maxPolarAngle = Math.PI * 0.49;
     c.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
@@ -149,7 +157,7 @@ export class CameraRig {
     if (mode === 'orbit') {
       this.applyOrbitLimits();
       c.enabled = true;
-      const pos = prev === 'orbit' ? ORBIT_HOME.pos : this.savedOrbit.pos;
+      const pos = prev === 'orbit' ? this.homePos() : this.savedOrbit.pos;
       const target = prev === 'orbit' ? ORBIT_HOME.target : this.savedOrbit.target;
       this.flyTo(pos, target, prev === 'orbit' ? this.homeFov() : this.savedOrbit.fov, opts.instant ? 0 : 1.3);
     } else if (mode === 'plan') {
