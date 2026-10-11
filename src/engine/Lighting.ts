@@ -215,7 +215,7 @@ export class Lighting {
     // Sun (or moon at night) — one shadow-casting light that fades through twilight.
     const center = new THREE.Vector3(0, 1.0, 0);
     if (s > -0.06) {
-      const intensity = 6.0 * Math.pow(smooth(0.0, 0.5, s), 0.7);
+      const intensity = 7.5 * Math.pow(smooth(0.0, 0.5, s), 0.7);
       this.sun.intensity = intensity;
       const k = 2100 + 3600 * smooth(0.0, 0.55, s);
       this.sun.color.copy(kelvinToRGB(k));
@@ -236,10 +236,10 @@ export class Lighting {
     this.hemi.intensity = 0.03 + 0.1 * daylight + 0.06 * night;
 
     // Window skylight
-    const winCol = new THREE.Color('#e3ecff').lerp(new THREE.Color('#ffd2a8'), golden * 0.8).lerp(new THREE.Color('#3a4a78'), night);
+    const winCol = new THREE.Color('#f1f2f4').lerp(new THREE.Color('#ffd2a8'), golden * 0.8).lerp(new THREE.Color('#3a4a78'), night);
     for (const l of this.windowLights) {
       l.color.copy(winCol);
-      l.intensity = 0.1 + 2.6 * daylight;
+      l.intensity = 0.1 + 3.6 * daylight;
     }
   }
 
@@ -259,7 +259,7 @@ export class Lighting {
   /** Exposure compensation so nights read as nights but stay legible. */
   exposureFor(env: EnvironmentState): number {
     const st = this.state;
-    return env.exposure * (1.0 + st.night * 0.25 + (1 - st.daylight) * 0.15);
+    return env.exposure * (0.95 + st.night * 0.15 + (1 - st.daylight) * 0.1);
   }
 
   /** Fog/horizon colour for distant exterior elements. */

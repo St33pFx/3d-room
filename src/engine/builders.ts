@@ -105,7 +105,7 @@ const sofa: Builder = (c) => {
     c.add(cushion(cw - 0.014, 0.44, 0.19, 0.07, 0.25), up, x, baseTop + 0.15 + 0.2, -d / 2 + 0.18 + 0.1, { rx: -0.16 });
   }
   // a throw pillow for character
-  c.add(cushion(0.42, 0.4, 0.13, 0.06, 0.4), c.fixed('fx-white'), -w / 2 + arm + 0.3, baseTop + 0.3, -d / 2 + 0.38, { rx: -0.3, rz: 0.12, ry: 0.25 });
+  c.add(cushion(0.44, 0.42, 0.12, 0.05, 0.9, 7), c.fixed('fx-pillow'), -w / 2 + arm + 0.3, baseTop + 0.3, -d / 2 + 0.4, { rx: -0.3, rz: 0.12, ry: 0.25 });
 };
 
 const sectional: Builder = (c) => {
@@ -603,20 +603,18 @@ const plantSmall: Builder = (c) => {
 // ── Decor ──────────────────────────────────────────────────────────────────
 
 function amphora(r: number, h: number): THREE.BufferGeometry {
-  const t = 0.008;
-  return lathe([
-    [0, 0],
-    [r * 0.55, 0],
-    [r * 0.95, h * 0.3],
-    [r, h * 0.45],
-    [r * 0.7, h * 0.75],
-    [r * 0.42, h * 0.9],
-    [r * 0.46, h],
-    [r * 0.46 - t, h],
-    [r * 0.4 - t, h * 0.9],
-    [r * 0.6, h * 0.7],
-    [0, h * 0.6],
-  ], 48);
+  const t = 0.007;
+  // smooth outer profile through a spline, then the lip and a shallow inside
+  const outer = new THREE.SplineCurve([
+    new THREE.Vector2(r * 0.5, 0),
+    new THREE.Vector2(r * 0.9, h * 0.22),
+    new THREE.Vector2(r, h * 0.45),
+    new THREE.Vector2(r * 0.72, h * 0.74),
+    new THREE.Vector2(r * 0.44, h * 0.9),
+    new THREE.Vector2(r * 0.47, h),
+  ]).getPoints(28);
+  const pts: [number, number][] = [[0, 0], ...outer.map((p) => [p.x, p.y] as [number, number]), [r * 0.47 - t, h], [r * 0.4 - t, h * 0.9], [r * 0.55, h * 0.72], [0, h * 0.62]];
+  return lathe(pts, 56);
 }
 
 const vaseBranches: Builder = (c) => {

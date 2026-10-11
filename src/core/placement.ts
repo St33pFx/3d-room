@@ -555,7 +555,9 @@ export function placeOnSurface(doc: DesignDoc, item: ItemInstance, t: SurfaceTar
     return !collides(boxesAt(cand, worldPose(doc, cand)), obs);
   };
   if (test(lx, lz)) return { item: make(lx, lz), valid: true, guides: [] };
-  for (let r = 0.02; r < 0.6; r += 0.02) {
+  // search the whole surface when nothing is known, stay local while dragging
+  const maxR = t.prev ? 0.3 : Math.max(s.w, s.d);
+  for (let r = 0.02; r < maxR; r += 0.02) {
     const n = Math.max(8, Math.round((2 * Math.PI * r) / 0.02));
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2;

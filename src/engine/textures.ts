@@ -353,7 +353,7 @@ const travertine: Gen = (b, spec, n, r) => {
       const w = n.fbm(u, v, 2, 3, 4);
       const band = Math.sin((v * 18 + w * 4) * Math.PI) * 0.5 + 0.5;
       const pore = n.get(u * 96, v * 220, 96, 220);
-      const isPore = pore > 0.86 ? smoothstep(0.86, 0.95, pore) : 0;
+      const isPore = pore > 0.9 ? smoothstep(0.9, 0.97, pore) * 0.7 : 0;
       let c = mix(c0, c2, band * 0.45);
       c = mix(c, c1, n.fbm(fract(u + 0.3), v, 6, 10, 3) * 0.5);
       c = mix(c, scale(c1, 0.75), isPore * 0.8);

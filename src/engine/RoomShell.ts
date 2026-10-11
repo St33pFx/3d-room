@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { HALF_D, HALF_W, ROOM, WALL_IDS, WALLS, type Opening, type WallSpec } from '../core/room';
 import type { RoomFinishes, WallId } from '../core/types';
 import type { MaterialLibrary } from './MaterialLibrary';
-import { box, cyl, mergeAll, rbox, sphere } from './geo';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { box, cyl, mergeAll, rbox } from './geo';
 
 // The architectural shell: walls with real openings, floor, ceiling,
 // joinery (windows, garden door, entry door, baseboards) and the garden that
@@ -251,7 +252,7 @@ export class RoomShell {
     const ex = this.exterior;
     ex.name = 'exterior';
     // lawn
-    const lawn = new THREE.Mesh(new THREE.CircleGeometry(70, 64), this.lib.get('ext-lawn'));
+    const lawn = new THREE.Mesh(new THREE.CircleGeometry(90, 64), this.lib.get('ext-lawn'));
     lawn.rotation.x = -Math.PI / 2;
     lawn.position.y = -0.33;
     lawn.receiveShadow = true;
@@ -272,11 +273,36 @@ export class RoomShell {
     gravel.receiveShadow = true;
     ex.add(gravel);
 
-    // garden trees & hedges
+    // garden trees, hedge and a distant tree line
     const foliage = this.lib.get('ext-foliage');
     const trunk = this.lib.get('ext-bark');
     const rnd = mulberry(4);
-    const trees: [number, number, number][] = [
+    const leafGeos: THREE.BufferGeometry[] = [];
+    const trunkGeos: THREE.BufferGeometry[] = [];
+    const blob = (r: number, x: number, y: number, z: number, sy = 1) => {
+      // lumpy icosphere so canopies read as foliage clusters, not balls
+      const g = mergeVertices(new THREE.IcosahedronGeometry(r, 2).deleteAttribute('normal').deleteAttribute('uv'));
+      const p = g.attributes.position as THREE.BufferAttribute;
+      const seed = rnd() * 10;
+      for (let i = 0; i < p.count; i++) {
+        const vx = p.getX(i), vy = p.getY(i), vz = p.getZ(i);
+        const k = 1 + 0.16 * Math.sin(vx * 5 + seed) * Math.cos(vz * 4.3 - seed) + 0.08 * Math.sin(vy * 7 + seed * 2);
+        p.setXYZ(i, vx * k, vy * k * sy, vz * k);
+      }
+      g.computeVertexNormals();
+      leafGeos.push(g.translate(x, y, z));
+    };
+    const tree = (x: number, z: number, s: number) => {
+      const th = 1.9 * s;
+      trunkGeos.push(cyl(0.07 * s, 0.13 * s, th + 0.6 * s, 7).translate(x, (th + 0.6 * s) / 2 - 0.33, z));
+      const n = 9 + Math.floor(rnd() * 5);
+      for (let k = 0; k < n; k++) {
+        const a = rnd() * Math.PI * 2;
+        const rr = rnd() * 0.9 * s;
+        blob((0.55 + rnd() * 0.45) * s, x + Math.cos(a) * rr, th + 0.4 * s + rnd() * 1.5 * s, z + Math.sin(a) * rr, 0.85);
+      }
+    };
+    const near: [number, number, number][] = [
       [-9.5, -12.5, 1.25],
       [-3.0, -15.5, 1.5],
       [4.5, -13.0, 1.15],
@@ -287,25 +313,15 @@ export class RoomShell {
       [12.0, 13.0, 1.3],
       [-11.0, 15.0, 1.2],
     ];
-    const leafGeos: THREE.BufferGeometry[] = [];
-    const trunkGeos: THREE.BufferGeometry[] = [];
-    for (const [x, z, s] of trees) {
-      const th = 1.7 * s;
-      trunkGeos.push(cyl(0.09 * s, 0.14 * s, th, 8).translate(x, th / 2 - 0.33, z));
-      for (let k = 0; k < 6; k++) {
-        const r = (1.0 + rnd() * 0.8) * s;
-        const blob = sphere(r, 10, 8);
-        blob.translate(x + (rnd() - 0.5) * 1.6 * s, th + (rnd() - 0.2) * 1.4 * s, z + (rnd() - 0.5) * 1.6 * s);
-        leafGeos.push(blob);
-      }
+    for (const [x, z, s] of near) tree(x, z, s);
+    // distant tree line closing the horizon
+    for (let i = 0; i < 46; i++) {
+      const a = (i / 46) * Math.PI * 2 + rnd() * 0.08;
+      const r = 34 + rnd() * 12;
+      tree(Math.cos(a) * r, Math.sin(a) * r, 1.4 + rnd() * 1.1);
     }
-    // hedge along the back
-    for (let i = 0; i < 14; i++) {
-      const blob = sphere(0.75 + rnd() * 0.25, 10, 8);
-      blob.scale(1.3, 1, 1);
-      blob.translate(-9 + i * 1.4, 0.2, -7.4 + (rnd() - 0.5) * 0.3);
-      leafGeos.push(blob);
-    }
+    // clipped hedge behind the windows
+    for (let i = 0; i < 18; i++) blob(0.6 + rnd() * 0.2, -9 + i * 1.05, 0.25, -8.2 + (rnd() - 0.5) * 0.2, 0.9);
     const leaves = new THREE.Mesh(mergeAll(leafGeos), foliage);
     leaves.castShadow = true;
     leaves.receiveShadow = true;

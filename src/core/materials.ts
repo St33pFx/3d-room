@@ -121,7 +121,7 @@ const M: MaterialDef[] = [
   { id: 'marble-carrara', name: 'Mármol Carrara', category: 'stone', color: '#ebe9e5', roughness: 0.18, texture: { kind: 'marble', tile: 1.2, colors: ['#efeeea', '#9c9b98', '#c9c7c2'], seed: 21, bump: 0.05 } },
   { id: 'marble-nero', name: 'Nero Marquina', category: 'stone', color: '#1a1a1a', roughness: 0.15, texture: { kind: 'marble', tile: 1.2, colors: ['#1b1b1c', '#e8e6e1', '#3a3a3b'], seed: 23, bump: 0.05 } },
   { id: 'marble-verde', name: 'Verde Alpi', category: 'stone', color: '#2d4537', roughness: 0.16, texture: { kind: 'marble', tile: 1.0, colors: ['#25392e', '#cfd8cf', '#46634f'], seed: 29, bump: 0.05 } },
-  { id: 'travertine', name: 'Travertino', category: 'stone', color: '#d7c3a5', roughness: 0.6, texture: { kind: 'travertine', tile: 1.0, colors: ['#d9c6a8', '#bfa783', '#e8dac3'], seed: 31, bump: 0.4 } },
+  { id: 'travertine', name: 'Travertino', category: 'stone', color: '#d7c3a5', roughness: 0.6, texture: { kind: 'travertine', tile: 1.6, colors: ['#d9c6a8', '#c7b08d', '#e8dac3'], seed: 31, bump: 0.3 } },
   { id: 'stone-grey', name: 'Piedra gris', category: 'stone', color: '#8a8780', roughness: 0.75, texture: { kind: 'concrete', tile: 1.2, colors: ['#8c8982', '#6f6c66', '#a29f98'], seed: 33, bump: 0.4 } },
 
   // ── Ceramic & lacquer ─────────────────────────────────────────────────
@@ -217,6 +217,7 @@ const M: MaterialDef[] = [
   { id: 'fx-books', name: 'Libros', category: 'fixed', color: '#ffffff', roughness: 0.8, vertexColors: true },
   { id: 'fx-pages', name: 'Páginas', category: 'fixed', color: '#efe7d6', roughness: 0.9 },
   { id: 'fx-black', name: 'Negro', category: 'fixed', color: '#151515', roughness: 0.4 },
+  { id: 'fx-pillow', name: 'Cojín', category: 'fixed', color: '#c99a4f', roughness: 0.8, sheen: 1, sheenColor: '#ffd98a', texture: { kind: 'velvet', tile: 0.4, colors: ['#b8892c'], bump: 0.25 } },
   { id: 'fx-rubber', name: 'Goma', category: 'fixed', color: '#222', roughness: 0.9 },
   { id: 'ext-lawn', name: 'Césped', category: 'fixed', color: '#6f8a4e', roughness: 0.95, texture: { kind: 'concrete', tile: 6, colors: ['#71894c', '#5b7440', '#86a05e'], seed: 131, bump: 0.6 } },
   { id: 'ext-deck', name: 'Tarima exterior', category: 'fixed', color: '#8a6a4c', roughness: 0.7, texture: { kind: 'slats', tile: 1.2, colors: ['#94724f', '#77593d', '#a7845f', '#3a2c20'], seed: 133, bump: 0.8 } },

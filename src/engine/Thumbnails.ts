@@ -28,12 +28,12 @@ export class Thumbnails {
     this.env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     pmrem.dispose();
     this.scene.environment = this.env;
-    this.scene.environmentIntensity = 0.75;
-    const key = new THREE.DirectionalLight('#fff4e6', 2.4);
+    this.scene.environmentIntensity = 0.55;
+    const key = new THREE.DirectionalLight('#fff4e6', 1.5);
     key.position.set(3, 5, 4);
     key.castShadow = false;
     this.scene.add(key);
-    this.scene.add(new THREE.HemisphereLight('#ffffff', '#d9cfc2', 0.6));
+    this.scene.add(new THREE.HemisphereLight('#ffffff', '#d9cfc2', 0.35));
   }
 
   get(type: string): string | undefined {

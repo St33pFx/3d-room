@@ -40,6 +40,8 @@ interface DragState {
   startRot: number;
   startAngle: number;
   last?: ItemInstance;
+  lastInvalid?: boolean;
+  lastValid?: ItemInstance;
   shift: boolean;
 }
 
@@ -213,12 +215,19 @@ export class Interaction {
       const objs = this.items.pickables(exclude);
       const hits = this.raycaster.intersectObjects(objs, false);
       const prevPose = worldPose(doc, prevItem);
+      // architecture in front of the pointer blocks too
+      const arch = this.hitArchitecture();
       for (const h of hits) {
+        if (arch && arch.distance < h.distance - 0.01) break;
         const pid = h.object.userData.itemId as string;
         const parent = findItem(doc, pid);
-        if (!parent || parent.parentId) continue;
+        if (!parent) continue;
+        if (parent.parentId) continue; // other decor: look through it
         const idx = surfaceAt(doc, parent, h.point.x, h.point.y, h.point.z);
-        if (idx < 0) continue;
+        if (idx < 0) {
+          // pointing at furniture without a usable surface: hold position
+          return { item: prevItem, valid: !d.lastInvalid, guides: [] };
+        }
         const parentPose = worldPose(doc, parent);
         const localRot = prevItem.parentId === parent.id ? prevItem.rotation : prevPose.rot - parentPose.rot;
         return placeOnSurface(doc, it, { parentId: parent.id, surface: idx, x: h.point.x, z: h.point.z, rot: localRot, prev: prevItem.parentId === parent.id ? prevItem : undefined }, mode);
@@ -290,6 +299,8 @@ export class Interaction {
     }
     if (next) {
       d.last = next;
+      d.lastInvalid = !valid;
+      if (valid) d.lastValid = next;
       const items = doc.items.map((i) => (i.id === d.id ? next! : i));
       st.preview({ ...doc, items });
       st.setInvalid(!valid);
@@ -304,7 +315,12 @@ export class Interaction {
       if (d.kind === 'place') {
         const r = this.dom.getBoundingClientRect();
         const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-        if (!inside || st.invalid || !d.started) {
+        if (inside && st.invalid && d.lastValid && d.started) {
+          const lv = d.lastValid;
+          st.preview({ ...st.doc, items: st.doc.items.map((i) => (i.id === lv.id ? lv : i)) });
+          st.setInvalid(false);
+        }
+        if (!inside || useStore.getState().invalid || !d.started) {
           st.cancelGesture();
           if (!inside) st.select(null);
         } else {
@@ -313,7 +329,12 @@ export class Interaction {
           st.toast(`${getDef(findItem(st.doc, d.id)!.type).name} añadido`);
         }
       } else if (d.started) {
-        if (st.invalid) st.cancelGesture();
+        if (st.invalid && d.lastValid) {
+          // drop at the last position that was free
+          const lv = d.lastValid;
+          st.preview({ ...st.doc, items: st.doc.items.map((i) => (i.id === lv.id ? lv : i)) });
+          st.endGesture();
+        } else if (st.invalid) st.cancelGesture();
         else st.endGesture();
       }
       st.setInvalid(false);

@@ -50,6 +50,8 @@ export class Engine {
   private disposed = false;
   private captureEnabled = true;
   frameCount = 0;
+  /** Testing hook: stop the render loop (frames can still be forced with settle()). */
+  paused = false;
 
   constructor(private container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false, depth: true, preserveDrawingBuffer: params.has('preserve') });
@@ -74,7 +76,7 @@ export class Engine {
     this.scene.add(this.lighting.group);
     this.items = new ItemLayer(this.lib);
     this.scene.add(this.items.group);
-    this.scene.fog = new THREE.Fog('#c9d6e3', 35, 160);
+    this.scene.fog = new THREE.Fog('#c9d6e3', 22, 85);
 
     this.rig = new CameraRig(this.camera, this.renderer.domElement);
     this.interaction = new Interaction(this.renderer.domElement, this.camera, this.shell, this.items, this.overlays, this.rig);
@@ -126,7 +128,7 @@ export class Engine {
     const loop = () => {
       if (this.disposed) return;
       this.raf = requestAnimationFrame(loop);
-      this.frame();
+      if (!this.paused) this.frame();
     };
     this.clock.start();
     loop();
@@ -211,7 +213,7 @@ export class Engine {
         m.envMap = this.lighting.skyEnv;
         m.needsUpdate = true;
       }
-      m.envMapIntensity = 1.6;
+      m.envMapIntensity = 0.45;
     }
     // Interior: bounce light captured from the room itself.
     const prevFog = this.scene.fog;
@@ -219,7 +221,7 @@ export class Engine {
     this.shell.withAllVisible(() => this.probe.capture(this.scene));
     this.scene.fog = prevFog;
     const st = this.lighting.state;
-    this.scene.environmentIntensity = 0.55 + 0.35 * st.daylight;
+    this.scene.environmentIntensity = 0.5 + 0.2 * st.daylight;
     this.lastCapture = performance.now();
   }
 
@@ -245,7 +247,7 @@ export class Engine {
     const lampF = env.lampMode === 'on' ? 1 : env.lampMode === 'off' ? 0 : this.lighting.state.lampFactor;
     this.items.setLampFactor(lampF);
     this.scene.fog!.color.copy(this.lighting.horizonColor());
-    this.post.setExposure(this.lighting.exposureFor(env), this.lighting.state.golden * 0.6);
+    this.post.setExposure(this.lighting.exposureFor(env), 0.55 + this.lighting.state.golden * 0.5 - this.lighting.state.night * 0.4);
 
     // bounce-light probe
     const now = performance.now();
@@ -322,6 +324,22 @@ export class Engine {
     const r = this.renderer.domElement.getBoundingClientRect();
     const visible = p.z < 1 && Math.abs(p.x) < 1.1 && Math.abs(p.y) < 1.1;
     return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height, visible };
+  }
+
+  /** Screen position (CSS px) of a world point — used by tests. */
+  screenPoint(x: number, y: number, z: number): { x: number; y: number } {
+    this.camera.updateMatrixWorld();
+    const p = new THREE.Vector3(x, y, z).project(this.camera);
+    const r = this.renderer.domElement.getBoundingClientRect();
+    return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
+  }
+
+  /** Screen position of an item's visual centre — used by tests. */
+  screenOf(id: string): { x: number; y: number } | null {
+    const b = this.items.boundsOf(id);
+    if (!b) return null;
+    const c = b.getCenter(new THREE.Vector3());
+    return this.screenPoint(c.x, c.y, c.z);
   }
 
   focusSelection() {

@@ -104,7 +104,7 @@ export class PostFX {
 
     this.bloom = new BloomEffect({ intensity: 0.55, luminanceThreshold: 1.1, luminanceSmoothing: 0.35, mipmapBlur: true, radius: 0.72 });
     this.grade = new GradeEffect();
-    const tone = new ToneMappingEffect({ mode: ToneMappingMode.AGX });
+    const tone = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC });
     const vignette = new VignetteEffect({ offset: 0.32, darkness: 0.42 });
     this.composer.addPass(new EffectPass(camera, this.bloom, this.grade, tone, this.outline, this.hoverOutline, vignette));
     this.composer.addPass(new EffectPass(camera, new SMAAEffect({ preset: SMAAPreset.HIGH })));

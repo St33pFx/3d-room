@@ -362,7 +362,8 @@ function fixSelection(get: () => AppState, set: (p: Partial<AppState>) => void) 
 // Autosave the working state (debounced).
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 useStore.subscribe((s, prev) => {
-  if (s.doc === prev.doc && s.env === prev.env) return;
+  const gestureEnded = !!prev.gesture && !s.gesture;
+  if (s.doc === prev.doc && s.env === prev.env && !gestureEnded) return;
   if (s.gesture) return;
   if (autosaveTimer) clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
