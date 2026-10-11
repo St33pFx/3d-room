@@ -114,6 +114,16 @@ export class ItemLayer {
     e.light?.dispose();
   }
 
+  /** Hide pieces hanging on cut-away walls (and whatever rests on them). */
+  setCutWalls(cut: Set<string>) {
+    for (const e of this.entries.values()) {
+      let wall = e.item.wall;
+      if (!wall && e.item.parentId) wall = this.entries.get(e.item.parentId)?.item.wall;
+      const visible = !wall || !cut.has(wall);
+      if (e.root.visible !== visible) e.root.visible = visible;
+    }
+  }
+
   setLampFactor(f: number) {
     if (Math.abs(f - this.lampFactor) < 1e-3) return;
     this.lampFactor = f;
@@ -134,15 +144,6 @@ export class ItemLayer {
     }
   }
 
-  /** Lamps currently lit (for the env probe heuristics). */
-  get lampsLit(): boolean {
-    return this.lampFactor > 0.01;
-  }
-
-  objectFor(id: string): THREE.Group | undefined {
-    return this.entries.get(id)?.root;
-  }
-
   meshesFor(id: string): THREE.Object3D[] {
     const e = this.entries.get(id);
     if (!e) return [];
@@ -157,7 +158,7 @@ export class ItemLayer {
   pickables(exclude?: Set<string>): THREE.Object3D[] {
     const out: THREE.Object3D[] = [];
     for (const [id, e] of this.entries) {
-      if (exclude?.has(id)) continue;
+      if (exclude?.has(id) || !e.root.visible) continue;
       e.model.traverse((o) => {
         if ((o as THREE.Mesh).isMesh) out.push(o);
       });

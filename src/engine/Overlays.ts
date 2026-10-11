@@ -193,13 +193,4 @@ export class Overlays {
     this.measures.visible = true;
   }
 
-  hideAll() {
-    this.measures.visible = false;
-    this.footprint.visible = false;
-    this.hoverPrint.visible = false;
-    this.guides.visible = false;
-    this.ring.visible = false;
-    this.handle.visible = false;
-    this.ringTicks.visible = false;
-  }
 }

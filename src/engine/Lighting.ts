@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import { ROOM, type Opening, type WallSpec, wallToWorld } from '../core/room';
+import { type Opening, type WallSpec, wallToWorld } from '../core/room';
 import type { EnvironmentState } from '../core/types';
 
 // Time-of-day lighting: physically based sky, sun/moon with soft shadows,
@@ -293,9 +293,5 @@ export class EnvironmentProbe {
     this.texture = rt.texture;
     scene.environment = this.texture;
     void prevEnv;
-  }
-
-  get height(): number {
-    return ROOM.height;
   }
 }

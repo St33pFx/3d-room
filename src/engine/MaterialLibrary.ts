@@ -190,10 +190,6 @@ export class MaterialLibrary {
       onProgress?.(done, total);
     }
   }
-
-  get queued(): number {
-    return this.inflight.size;
-  }
 }
 
 // ── Swatches for the UI ─────────────────────────────────────────────────────

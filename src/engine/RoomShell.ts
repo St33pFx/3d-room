@@ -408,6 +408,12 @@ export class RoomShell {
   /** Materials of the garden, lit by the sky rather than the interior probe. */
   static readonly EXTERIOR_MATERIALS = ['ext-lawn', 'ext-deck', 'ext-gravel', 'ext-foliage', 'ext-bark', 'ext-plinth'];
 
+  cutWalls(): Set<string> {
+    const out = new Set<string>();
+    for (const p of this.walls.values()) if (p.cut) out.add(p.id);
+    return out;
+  }
+
   isCut(id: WallId): boolean {
     return this.walls.get(id)?.cut ?? false;
   }

@@ -394,5 +394,3 @@ useStore.subscribe((s, prev) => {
     writeAutosave({ doc: st.doc, env: st.env, projectId: st.projectId });
   }, 500);
 });
-
-export const selectedItem = (s: AppState): ItemInstance | undefined => (s.selection?.kind === 'item' ? findItem(s.doc, s.selection.id) : undefined);

@@ -3,7 +3,7 @@ import { getDef } from '../core/catalog';
 import { findItem, footprintAABB, worldPose, boxesAt, obstacles } from '../core/placement';
 import { HALF_D, HALF_W } from '../core/room';
 import { overlapMTV } from '../core/geometry';
-import type { CameraBookmark, CameraMode, DesignDoc, EnvironmentState } from '../core/types';
+import type { CameraBookmark, CameraMode, DesignDoc } from '../core/types';
 import { useStore, type AppState } from '../state/store';
 import { CameraRig, ORBIT_HOME } from './CameraRig';
 import { Interaction } from './Interaction';
@@ -218,7 +218,9 @@ export class Engine {
     // Interior: bounce light captured from the room itself.
     const prevFog = this.scene.fog;
     this.scene.fog = null;
+    this.items.setCutWalls(new Set());
     this.shell.withAllVisible(() => this.probe.capture(this.scene));
+    this.items.setCutWalls(this.shell.cutWalls());
     this.scene.fog = prevFog;
     const st = this.lighting.state;
     this.scene.environmentIntensity = 0.5 + 0.2 * st.daylight;
@@ -243,6 +245,7 @@ export class Engine {
     this.rig.update(dt);
     const mode = this.rig.mode;
     this.shell.updateCutaway(this.camera.position, mode !== 'walk');
+    this.items.setCutWalls(this.shell.cutWalls());
 
     const env = useStore.getState().env;
     this.lighting.update(env, dt);
@@ -401,9 +404,10 @@ export class Engine {
     if (b) this.rig.focus(b);
   }
 
+  /** Back to the mode's default framing. */
   resetView() {
     if (this.rig.mode === 'orbit') this.rig.flyTo(this.rig.homePos(), ORBIT_HOME.target, this.rig.homeFov(), 1.1);
-    else this.rig.setMode(this.rig.mode);
+    else if (this.rig.mode !== 'cinematic') this.rig.setMode(this.rig.mode);
   }
 
   currentView(name: string): CameraBookmark {
@@ -462,10 +466,6 @@ export class Engine {
     this.captureEnv();
     this.frame();
     return this.frameCount;
-  }
-
-  envPreview(env: EnvironmentState) {
-    this.lighting.update(env, 0);
   }
 
   /** Debug/testing hook: true when the item intersects nothing. */

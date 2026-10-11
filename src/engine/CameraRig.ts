@@ -351,13 +351,6 @@ export class CameraRig {
     this.keys.delete(e.code);
   };
 
-  get isTransitioning(): boolean {
-    return !!this.transition;
-  }
-
-  /** Walk-mode helper so arrow keys can nudge items instead of walking. */
-  walkUsesArrows = true;
-
   dispose() {
     this.controls.dispose();
     this.dom.removeEventListener('pointerdown', this.onPointerDown);

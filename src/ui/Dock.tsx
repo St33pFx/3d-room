@@ -59,7 +59,7 @@ export function Dock() {
     <div className="dock">
       <div className="dock-group" role="tablist" aria-label="Cámara">
         {MODES.map((m) => (
-          <button key={m.id} role="tab" aria-selected={mode === m.id} className={`mode-btn${mode === m.id ? ' is-active' : ''}`} onClick={() => setCamera({ mode: m.id, tour: m.id === 'cinematic' })} title={`${m.label} (${m.key})`}>
+          <button key={m.id} role="tab" aria-selected={mode === m.id} className={`mode-btn${mode === m.id ? ' is-active' : ''}`} onClick={() => (mode === m.id && m.id !== 'cinematic' ? getEngine()?.resetView() : setCamera({ mode: m.id, tour: m.id === 'cinematic' }))} title={mode === m.id && m.id !== 'cinematic' ? `${m.label} · clic para recentrar` : `${m.label} (${m.key})`}>
             {m.icon}
             <span>{m.label}</span>
           </button>
